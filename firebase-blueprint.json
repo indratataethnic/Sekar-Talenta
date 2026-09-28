@@ -1,0 +1,210 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile with role-based access control",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "email": { "type": "string", "format": "email", "maxLength": 256 },
+        "displayName": { "type": "string", "maxLength": 128 },
+        "role": { "type": "string", "enum": ["super_admin", "kepala_sekolah", "guru_kelas", "pembina", "murid"] },
+        "assignedClass": { "type": "string", "maxLength": 32 },
+        "assignedAmbassadorType": { "type": "string", "maxLength": 64 },
+        "assignedExtracurricularId": { "type": "string", "maxLength": 64 },
+        "studentId": { "type": "string", "maxLength": 128 },
+        "avatarUrl": { "type": "string", "maxLength": 1024 },
+        "phone": { "type": "string", "maxLength": 32 },
+        "status": { "type": "string", "enum": ["active", "inactive"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "email", "displayName", "role"]
+    },
+    "Student": {
+      "title": "Student",
+      "description": "Student primary entity and metadata",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "nisn": { "type": "string", "maxLength": 32 },
+        "nis": { "type": "string", "maxLength": 32 },
+        "fullName": { "type": "string", "maxLength": 128 },
+        "gender": { "type": "string", "enum": ["L", "P"] },
+        "birthPlace": { "type": "string", "maxLength": 128 },
+        "birthDate": { "type": "string", "maxLength": 32 },
+        "classId": { "type": "string", "maxLength": 32 },
+        "academicYear": { "type": "string", "maxLength": 32 },
+        "avatarUrl": { "type": "string", "maxLength": 1024 },
+        "isActive": { "type": "boolean" },
+        "parentName": { "type": "string", "maxLength": 128 },
+        "parentPhone": { "type": "string", "maxLength": 32 },
+        "notes": { "type": "string", "maxLength": 2048 },
+        "createdBy": { "type": "string", "maxLength": 128 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "nisn", "nis", "fullName", "gender", "classId", "academicYear"]
+    },
+    "Teacher": {
+      "title": "Teacher",
+      "description": "Teacher and educational personnel entity",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "nip": { "type": "string", "maxLength": 32 },
+        "fullName": { "type": "string", "maxLength": 128 },
+        "position": { "type": "string", "maxLength": 128 },
+        "additionalDuties": { "type": "string", "maxLength": 256 },
+        "phone": { "type": "string", "maxLength": 32 },
+        "email": { "type": "string", "format": "email", "maxLength": 256 },
+        "avatarUrl": { "type": "string", "maxLength": 1024 },
+        "isActive": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "fullName", "position"]
+    },
+    "StudentInterest": {
+      "title": "StudentInterest",
+      "description": "Student talent and interest exploration responses",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "studentId": { "type": "string", "maxLength": 128 },
+        "studentName": { "type": "string", "maxLength": 128 },
+        "classId": { "type": "string", "maxLength": 32 },
+        "categoryId": { "type": "string", "maxLength": 64 },
+        "subcategory": { "type": "string", "maxLength": 128 },
+        "interestLevel": { "type": "string", "enum": ["sangat_tertarik", "tertarik", "ingin_mencoba"] },
+        "desiredActivities": { "type": "string", "maxLength": 1024 },
+        "notes": { "type": "string", "maxLength": 2048 },
+        "submittedAt": { "type": "string", "format": "date-time" },
+        "academicYear": { "type": "string", "maxLength": 32 },
+        "semester": { "type": "string", "enum": ["Ganjil", "Genap"] }
+      },
+      "required": ["id", "studentId", "categoryId", "interestLevel"]
+    },
+    "AmbassadorMember": {
+      "title": "AmbassadorMember",
+      "description": "Student assignment to school ambassador roles",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "studentId": { "type": "string", "maxLength": 128 },
+        "studentName": { "type": "string", "maxLength": 128 },
+        "classId": { "type": "string", "maxLength": 32 },
+        "ambassadorTypeId": { "type": "string", "maxLength": 64 },
+        "ambassadorTypeName": { "type": "string", "maxLength": 128 },
+        "assignedYear": { "type": "string", "maxLength": 32 },
+        "startDate": { "type": "string", "maxLength": 32 },
+        "endDate": { "type": "string", "maxLength": 32 },
+        "coachId": { "type": "string", "maxLength": 128 },
+        "coachName": { "type": "string", "maxLength": 128 },
+        "status": { "type": "string", "enum": ["aktif", "selesai", "alumni"] },
+        "roleTitle": { "type": "string", "maxLength": 128 },
+        "reflectionNotes": { "type": "string", "maxLength": 2048 },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "studentId", "ambassadorTypeId", "assignedYear", "status"]
+    },
+    "ExtracurricularMember": {
+      "title": "ExtracurricularMember",
+      "description": "Student registration and participation in extracurricular",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "extracurricularId": { "type": "string", "maxLength": 64 },
+        "extracurricularName": { "type": "string", "maxLength": 128 },
+        "studentId": { "type": "string", "maxLength": 128 },
+        "studentName": { "type": "string", "maxLength": 128 },
+        "classId": { "type": "string", "maxLength": 32 },
+        "joinedAt": { "type": "string", "maxLength": 32 },
+        "status": { "type": "string", "enum": ["menunggu", "aktif", "nonaktif"] },
+        "attendancePercentage": { "type": "string", "maxLength": 16 },
+        "coachNotes": { "type": "string", "maxLength": 2048 },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "extracurricularId", "studentId", "status"]
+    },
+    "Activity": {
+      "title": "Activity",
+      "description": "Activity, work program execution, and event details",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "title": { "type": "string", "maxLength": 256 },
+        "type": { "type": "string", "enum": ["duta", "ekstrakurikuler", "sekolah"] },
+        "referenceId": { "type": "string", "maxLength": 64 },
+        "referenceName": { "type": "string", "maxLength": 128 },
+        "personInCharge": { "type": "string", "maxLength": 128 },
+        "description": { "type": "string", "maxLength": 2048 },
+        "objectives": { "type": "string", "maxLength": 2048 },
+        "dateTime": { "type": "string", "maxLength": 64 },
+        "location": { "type": "string", "maxLength": 128 },
+        "status": { "type": "string", "enum": ["rencana", "berlangsung", "selesai", "dibatalkan"] },
+        "outcomeNotes": { "type": "string", "maxLength": 2048 },
+        "reflectionNotes": { "type": "string", "maxLength": 2048 },
+        "followUpNotes": { "type": "string", "maxLength": 2048 },
+        "createdBy": { "type": "string", "maxLength": 128 },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "title", "type", "referenceId", "dateTime", "status"]
+    },
+    "Portfolio": {
+      "title": "Portfolio",
+      "description": "Student learning artifact, achievements, and reflective portfolio",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "studentId": { "type": "string", "maxLength": 128 },
+        "studentName": { "type": "string", "maxLength": 128 },
+        "classId": { "type": "string", "maxLength": 32 },
+        "title": { "type": "string", "maxLength": 256 },
+        "description": { "type": "string", "maxLength": 2048 },
+        "category": { "type": "string", "enum": ["karya", "proyek", "kepemimpinan", "kontribusi_duta", "ekstrakurikuler", "prestasi_akademik", "prestasi_nonakademik", "refleksi_diri"] },
+        "date": { "type": "string", "maxLength": 32 },
+        "coachOrTeacherName": { "type": "string", "maxLength": 128 },
+        "reflection": { "type": "string", "maxLength": 2048 },
+        "isVerified": { "type": "boolean" },
+        "verifiedBy": { "type": "string", "maxLength": 128 },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "studentId", "title", "category", "date"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profiles and permissions"
+    },
+    "/students/{studentId}": {
+      "schema": "Student",
+      "description": "Student master database"
+    },
+    "/teachers/{teacherId}": {
+      "schema": "Teacher",
+      "description": "Teacher and staff directory"
+    },
+    "/studentInterests/{interestId}": {
+      "schema": "StudentInterest",
+      "description": "Student talent and interest exploration entries"
+    },
+    "/ambassadorMembers/{memberId}": {
+      "schema": "AmbassadorMember",
+      "description": "School ambassador roster"
+    },
+    "/extracurricularMembers/{memberId}": {
+      "schema": "ExtracurricularMember",
+      "description": "Extracurricular member enrollment"
+    },
+    "/activities/{activityId}": {
+      "schema": "Activity",
+      "description": "Activities, meetings, and program schedules"
+    },
+    "/portfolios/{portfolioId}": {
+      "schema": "Portfolio",
+      "description": "Student portfolios, works, and milestones"
+    }
+  }
+}

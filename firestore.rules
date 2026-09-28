@@ -1,0 +1,146 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function isSuperAdmin() {
+      return isSignedIn() && (
+        getUserData().role == 'super_admin' ||
+        request.auth.token.email == 'indartha.meiputra22@admin.sd.belajar.id'
+      );
+    }
+
+    function isKepalaSekolah() {
+      return isSignedIn() && (getUserData().role == 'kepala_sekolah' || isSuperAdmin());
+    }
+
+    function isTppkAuthorized() {
+      return isSignedIn() && (
+        isSuperAdmin() ||
+        isKepalaSekolah() ||
+        getUserData().assignedAmbassadorType == 'duta_tppk' ||
+        (getUserData().role == 'pembina' && getUserData().assignedAmbassadorType == 'duta_tppk')
+      );
+    }
+
+    // Public/School general read access, write authorized for applet operations
+    match /schoolProfile/{profileId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    match /classes/{classId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    match /talentCategories/{categoryId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    match /ambassadorTypes/{typeId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    match /extracurriculars/{extraId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    match /announcements/{announcementId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    // Students master data (readable across school, write for school admins/teachers)
+    match /students/{studentId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    // Teachers directory (readable across school, write for school admins/teachers)
+    match /teachers/{teacherId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    match /studentInterests/{interestId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    match /teacherObservations/{observationId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    match /ambassadorMembers/{memberId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    match /ambassadorPrograms/{programId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    match /extracurricularMembers/{memberId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    match /activities/{activityId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    match /attendanceSessions/{attendanceId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    match /portfolios/{portfolioId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    match /achievements/{achievementId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    match /notifications/{notifId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    match /auditLogs/{logId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    match /users/{userId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    // Confidential TPPK Reports (Strictly Protected)
+    match /tppkReports/{reportId} {
+      allow read, write: if isTppkAuthorized() || isSuperAdmin();
+    }
+
+    // Connection Health Test
+    match /test/{testId} {
+      allow read, write: if true;
+    }
+  }
+}
