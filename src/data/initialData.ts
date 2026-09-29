@@ -521,6 +521,14 @@ export const initialExtracurriculars: Extracurricular[] = [
       'Membentuk kepribadian qur\'ani yang santun dan berakhlakul karimah.'
     ],
     coachName: 'Ustadz M. Farhan, S.Pd.I.',
+    coaches: [
+      {
+        name: 'Ustadz M. Farhan, S.Pd.I.',
+        role: 'Pembina Utama',
+        type: 'internal',
+        phone: '081298765411'
+      }
+    ],
     coachPhone: '081298765411',
     dayTimeSchedule: 'Selasa & Kamis, 14.30 - 16.00 WIB',
     location: 'Musholla As-Salam SDN Karanganyar',
@@ -541,6 +549,14 @@ export const initialExtracurriculars: Extracurricular[] = [
       'Kemandirian murid dalam menulis huruf hijaiyah bersambung.'
     ],
     coachName: 'Ustadzah Fatimah, S.Ag.',
+    coaches: [
+      {
+        name: 'Ustadzah Fatimah, S.Ag.',
+        role: 'Pembina Utama',
+        type: 'internal',
+        phone: '081344556677'
+      }
+    ],
     coachPhone: '081344556677',
     dayTimeSchedule: 'Senin & Rabu, 14.30 - 15.45 WIB',
     location: 'Ruang Agama Islam',
@@ -561,6 +577,20 @@ export const initialExtracurriculars: Extracurricular[] = [
       'Menumbuhkan jiwa kepemimpinan dan kerja sama regu.'
     ],
     coachName: 'Kak Eko Prasetyo, S.Pd. & Kak Maya Kusuma, S.Pd.',
+    coaches: [
+      {
+        name: 'Kak Eko Prasetyo, S.Pd.',
+        role: 'Pembina Pramuka Putra',
+        type: 'internal',
+        phone: '085611223344'
+      },
+      {
+        name: 'Kak Maya Kusuma, S.Pd.',
+        role: 'Pembina Pramuka Putri',
+        type: 'internal',
+        phone: '085611223345'
+      }
+    ],
     coachPhone: '085611223344',
     dayTimeSchedule: 'Jumat, 13.30 - 15.30 WIB',
     location: 'Halaman Utama & Aula Sekolah',
@@ -580,7 +610,22 @@ export const initialExtracurriculars: Extracurricular[] = [
       'Membuat game edukasi animasi sederhana menggunakan Scratch.',
       'Mengenal perangkat keras dan logika sensor sederhana.'
     ],
-    coachName: 'Bapak Hendra Gunawan, S.Kom.',
+    coachName: 'Bapak Hendra Gunawan, S.Kom. & Kak Rizky Ramadhan, S.Kom.',
+    coaches: [
+      {
+        name: 'Bapak Hendra Gunawan, S.Kom.',
+        role: 'Pembina Sekolah',
+        type: 'internal',
+        phone: '087812345678'
+      },
+      {
+        name: 'Kak Rizky Ramadhan, S.Kom.',
+        role: 'Instruktur Robotik & Coding',
+        type: 'external',
+        organization: 'Lembaga Edukasi Robotik Pasuruan',
+        phone: '081233449900'
+      }
+    ],
     coachPhone: '087812345678',
     dayTimeSchedule: 'Rabu, 14.00 - 15.30 WIB',
     location: 'Laboratorium Komputer & Digital SDN Karanganyar',
@@ -601,7 +646,22 @@ export const initialExtracurriculars: Extracurricular[] = [
       'Melatih ketelitian tangan, kesabaran, dan kreativitas pola warna.',
       'Menghasilkan karya taplak, selendang, dan hiasan dinding bernilai seni.'
     ],
-    coachName: 'Ibu Ratna Dewi, S.Pd. & Pengrajin Batik Lokal',
+    coachName: 'Ibu Ratna Dewi, S.Pd. & Ibu Siti Khodijah',
+    coaches: [
+      {
+        name: 'Ibu Ratna Dewi, S.Pd.',
+        role: 'Koordinator Pembina',
+        type: 'internal',
+        phone: '082155667788'
+      },
+      {
+        name: 'Ibu Siti Khodijah',
+        role: 'Instruktur Batik Tulis Tradisional',
+        type: 'external',
+        organization: 'Paguyuban Batik Karanganyar',
+        phone: '081399887766'
+      }
+    ],
     coachPhone: '082155667788',
     dayTimeSchedule: 'Sabtu, 08.00 - 10.00 WIB',
     location: 'Ruang Prakarya Seni',
@@ -621,7 +681,22 @@ export const initialExtracurriculars: Extracurricular[] = [
       'Menumbuhkan rasa cinta sholawat dan kekompakan tim.',
       'Menyiapkan grup festival albanjari tingkat kota.'
     ],
-    coachName: 'Ustadz Ahmad Fauzi, S.Pd.',
+    coachName: 'Ustadz Ahmad Fauzi, S.Pd. & Kak Syahrul Romadhon',
+    coaches: [
+      {
+        name: 'Ustadz Ahmad Fauzi, S.Pd.',
+        role: 'Pembina Utama',
+        type: 'internal',
+        phone: '085733445566'
+      },
+      {
+        name: 'Kak Syahrul Romadhon',
+        role: 'Pelatih Vokal & Tabuhan',
+        type: 'external',
+        organization: 'Ikatan Seni Hadrah Pasuruan',
+        phone: '085811224455'
+      }
+    ],
     coachPhone: '085733445566',
     dayTimeSchedule: 'Kamis, 15.30 - 17.00 WIB',
     location: 'Aula Karanganyar',
@@ -641,7 +716,21 @@ export const initialExtracurriculars: Extracurricular[] = [
       'Menyiapkan bibit atlet untuk O2SN cabang atletik tingkat kecamatan/kota.',
       'Menanamkan sportivitas dan disiplin berlatih.'
     ],
-    coachName: 'Bapak Agus Setiawan, S.Pd.',
+    coachName: 'Bapak Agus Setiawan, S.Pd. & Bapak Rian Hidayat, S.Pd.Kor.',
+    coaches: [
+      {
+        name: 'Bapak Agus Setiawan, S.Pd.',
+        role: 'Pembina Utama',
+        type: 'internal',
+        phone: '081987654321'
+      },
+      {
+        name: 'Bapak Rian Hidayat, S.Pd.Kor.',
+        role: 'Pelatih Teknis & Fisik O2SN',
+        type: 'internal',
+        phone: '081987654322'
+      }
+    ],
     coachPhone: '081987654321',
     dayTimeSchedule: 'Selasa & Jumat Pagi, 06.00 - 07.00 WIB',
     location: 'Lapangan Olahraga SDN Karanganyar',
@@ -661,7 +750,22 @@ export const initialExtracurriculars: Extracurricular[] = [
       'Mengisi pentas seni sekolah dan mengikuti ajang FLS2N tari tingkat kota.',
       'Menumbuhkan rasa bangga terhadap seni tari nusantara.'
     ],
-    coachName: 'Ibu Dian Safitri, S.Pd. & Pelatih Sanggar',
+    coachName: 'Ibu Dian Safitri, S.Pd. & Kak Dimas Prasetya, S.Sn.',
+    coaches: [
+      {
+        name: 'Ibu Dian Safitri, S.Pd.',
+        role: 'Pembina Guru Sekolah',
+        type: 'internal',
+        phone: '085233112233'
+      },
+      {
+        name: 'Kak Dimas Prasetya, S.Sn.',
+        role: 'Instruktur & Koreografer Tari',
+        type: 'external',
+        organization: 'Sanggar Seni Tari Suropati Pasuruan',
+        phone: '085233112299'
+      }
+    ],
     coachPhone: '085233112233',
     dayTimeSchedule: 'Sabtu, 08.00 - 10.00 WIB',
     location: 'Panggung Terbuka SDN Karanganyar',

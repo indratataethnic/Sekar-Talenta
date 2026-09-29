@@ -57,13 +57,42 @@ export function getDetectedTeacherDutiesBreakdown(
     }
   });
 
-  // 2. Check Ekskul (Pembina / Pelatih Ekstrakurikuler)
+  // 2. Check Ekskul (Pembina / Pelatih Ekstrakurikuler - bisa lebih dari 1 pembina)
   extracurriculars.forEach((ekskul) => {
-    if (ekskul.coachName && isTeacherNameMatching(ekskul.coachName, teacherName)) {
+    let matchedCoachRole = '';
+    let isMatched = false;
+
+    // Check array of coaches if defined
+    if (Array.isArray(ekskul.coaches) && ekskul.coaches.length > 0) {
+      for (const c of ekskul.coaches) {
+        if (c.name && isTeacherNameMatching(c.name, teacherName)) {
+          isMatched = true;
+          if (c.role) matchedCoachRole = c.role;
+          break;
+        }
+      }
+    }
+
+    // Fallback check coachName string
+    if (!isMatched && ekskul.coachName && isTeacherNameMatching(ekskul.coachName, teacherName)) {
+      isMatched = true;
+    }
+
+    if (isMatched) {
       const name = ekskul.name;
-      const dutyLabel = name.toLowerCase().startsWith('ekskul') || name.toLowerCase().startsWith('pembina') || name.toLowerCase().startsWith('pelatih')
-        ? name
-        : `Pembina Ekskul ${name}`;
+      let dutyLabel = '';
+      if (matchedCoachRole) {
+        dutyLabel = `${matchedCoachRole} Ekskul ${name}`;
+      } else if (
+        name.toLowerCase().startsWith('ekskul') ||
+        name.toLowerCase().startsWith('pembina') ||
+        name.toLowerCase().startsWith('pelatih')
+      ) {
+        dutyLabel = name;
+      } else {
+        dutyLabel = `Pembina Ekskul ${name}`;
+      }
+
       results.push({
         type: 'ekskul',
         sourceName: ekskul.name,

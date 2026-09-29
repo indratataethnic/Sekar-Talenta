@@ -181,6 +181,15 @@ export interface AmbassadorProgram {
   createdAt: string;
 }
 
+export interface ExtracurricularCoach {
+  name: string;
+  role?: string; // e.g. "Pembina Utama", "Pembina Pendamping", "Pelatih Teknis", "Instruktur Ahli", "Koreografer", dll.
+  type?: 'internal' | 'external'; // 'internal' (Guru/Tendik Sekolah) atau 'external' (Luar Sekolah/Sanggar/Pelatih Ahli)
+  organization?: string; // Asal lembaga / sanggar / instansi jika eksternal
+  phone?: string;
+  teacherId?: string;
+}
+
 export interface Extracurricular {
   id: string;
   code: string;
@@ -190,7 +199,8 @@ export interface Extracurricular {
   badgeColor: string;
   description: string;
   goals: string[];
-  coachName: string;
+  coachName: string; // Tampilan utama / gabungan nama pembina
+  coaches?: ExtracurricularCoach[]; // Daftar rincian pembina (bisa 1 atau lebih, internal maupun eksternal)
   coachPhone?: string;
   dayTimeSchedule: string; // e.g. "Jumat, 14.00 - 16.00 WIB"
   location: string;

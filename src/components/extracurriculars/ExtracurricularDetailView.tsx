@@ -11,9 +11,14 @@ import {
   Calendar,
   Award,
   Trash2,
-  Edit2
+  Edit2,
+  UserCheck,
+  School,
+  Globe2,
+  Building2,
+  Sparkles
 } from 'lucide-react';
-import { Extracurricular, ExtracurricularMember } from '../../types';
+import { Extracurricular, ExtracurricularMember, ExtracurricularCoach } from '../../types';
 import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
 import { Card } from '../common/Card';
@@ -47,10 +52,24 @@ export const ExtracurricularDetailView: React.FC<ExtracurricularDetailViewProps>
 
   const members = extracurricularMembers.filter((m) => m.extracurricularId === extracurricular.id);
   const myActivities = activities.filter((a) => a.referenceId === extracurricular.id);
-  const myAchievements = achievements.filter((ach) => ach.category.toLowerCase().includes(extracurricular.name.toLowerCase()));
+  const myAchievements = achievements.filter((ach) =>
+    ach.category.toLowerCase().includes(extracurricular.name.toLowerCase())
+  );
 
   const capacity = extracurricular.capacity || 30;
   const capacityPercent = Math.min(100, Math.round((members.length / capacity) * 100));
+
+  const coachList: ExtracurricularCoach[] =
+    extracurricular.coaches && extracurricular.coaches.length > 0
+      ? extracurricular.coaches
+      : [
+          {
+            name: extracurricular.coachName || 'Pembina',
+            role: 'Pembina Utama',
+            type: 'internal',
+            phone: extracurricular.coachPhone
+          }
+        ];
 
   return (
     <div className="space-y-6 pb-12">
@@ -79,34 +98,108 @@ export const ExtracurricularDetailView: React.FC<ExtracurricularDetailViewProps>
           <div className="w-16 h-16 rounded-2xl bg-white/10 flex items-center justify-center p-3 border border-white/20 flex-shrink-0">
             <Layers className="w-8 h-8 text-amber-300" />
           </div>
-          <div className="flex-1 space-y-1 text-center sm:text-left">
+          <div className="flex-1 space-y-2 text-center sm:text-left">
             <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
               <span className="px-2.5 py-0.5 rounded-full bg-blue-500 text-white text-xs font-extrabold">
                 {extracurricular.category}
               </span>
-              <span className="px-2.5 py-0.5 rounded-full bg-emerald-800 text-emerald-200 text-xs font-semibold">
-                Pembina: {extracurricular.coachName}
+              <span className="px-2.5 py-0.5 rounded-full bg-emerald-800/80 text-emerald-200 text-xs font-semibold flex items-center gap-1">
+                <UserCheck className="w-3 h-3 text-emerald-300" />
+                {coachList.length} Pembina / Pelatih
               </span>
             </div>
+
             <h2 className="text-xl sm:text-2xl font-black text-white">{extracurricular.name}</h2>
             <p className="text-xs sm:text-sm text-emerald-100/90 leading-relaxed max-w-3xl">
               {extracurricular.description}
             </p>
 
-            <div className="flex flex-wrap items-center justify-center sm:justify-start gap-4 pt-3 text-xs text-emerald-200 font-medium">
+            <div className="flex flex-wrap items-center justify-center sm:justify-start gap-4 pt-2 text-xs text-emerald-200 font-medium">
               <span className="flex items-center gap-1">
                 <Clock className="w-3.5 h-3.5 text-amber-300" /> {extracurricular.dayTimeSchedule}
               </span>
               <span className="flex items-center gap-1">
                 <MapPin className="w-3.5 h-3.5 text-amber-300" /> {extracurricular.location}
               </span>
-              {extracurricular.coachPhone && (
-                <span className="flex items-center gap-1">
-                  <Phone className="w-3.5 h-3.5 text-amber-300" /> {extracurricular.coachPhone}
-                </span>
-              )}
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* Team of Coaches (Tim Pembina & Pelatih) */}
+      <div className="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-2xs space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <UserCheck className="w-5 h-5 text-emerald-700" />
+            <div>
+              <h3 className="text-sm font-bold text-slate-900">Tim Pembina & Pelatih Kegiatan</h3>
+              <p className="text-xs text-slate-500">
+                Pendidik sekolah & instruktur ahli yang mendampingi dan melatih murid
+              </p>
+            </div>
+          </div>
+          <span className="text-xs font-bold text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded-xl border border-emerald-200">
+            {coachList.length} Personil
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
+          {coachList.map((coach, idx) => (
+            <div
+              key={idx}
+              className="p-4 rounded-2xl bg-slate-50/70 border border-slate-200/80 hover:border-emerald-300 transition-all flex items-start gap-3.5 group"
+            >
+              <div
+                className={`w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-2xs ${
+                  coach.type === 'external'
+                    ? 'bg-amber-100 text-amber-800 border border-amber-200'
+                    : 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                }`}
+              >
+                {coach.type === 'external' ? (
+                  <Globe2 className="w-5 h-5 text-amber-700" />
+                ) : (
+                  <School className="w-5 h-5 text-emerald-700" />
+                )}
+              </div>
+
+              <div className="flex-1 min-w-0 space-y-1">
+                <div className="flex flex-wrap items-center justify-between gap-1.5">
+                  <h4 className="text-xs font-black text-slate-900 group-hover:text-emerald-800 transition-colors">
+                    {coach.name}
+                  </h4>
+                  <span
+                    className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                      coach.type === 'external'
+                        ? 'bg-amber-100 text-amber-800 border border-amber-200'
+                        : 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                    }`}
+                  >
+                    {coach.type === 'external' ? '🌐 Pelatih Eksternal' : '🏫 Guru Internal'}
+                  </span>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-1.5 text-xs text-slate-600">
+                  <span className="inline-flex items-center gap-1 font-semibold text-slate-700 bg-white px-2 py-0.5 rounded-lg border border-slate-200 text-[11px]">
+                    <Sparkles className="w-3 h-3 text-emerald-600" /> {coach.role || 'Pembina'}
+                  </span>
+
+                  {coach.type === 'external' && coach.organization && (
+                    <span className="inline-flex items-center gap-1 text-[11px] text-amber-900 bg-amber-50/80 px-2 py-0.5 rounded-lg border border-amber-200 font-medium">
+                      <Building2 className="w-3 h-3 text-amber-600" /> {coach.organization}
+                    </span>
+                  )}
+                </div>
+
+                {coach.phone && (
+                  <div className="pt-1 text-[11px] text-slate-500 flex items-center gap-1.5">
+                    <Phone className="w-3 h-3 text-slate-400" />
+                    <span>{coach.phone}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          ))}
         </div>
       </div>
 
