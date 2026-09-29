@@ -4,7 +4,6 @@ import { DataProvider } from './context/DataContext';
 import { Sidebar } from './components/layout/Sidebar';
 import { Header } from './components/layout/Header';
 import { Footer } from './components/layout/Footer';
-import { DemoBanner } from './components/common/DemoBanner';
 import { LoginView } from './components/auth/LoginView';
 
 // Views
@@ -60,9 +59,6 @@ function AppContent() {
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col antialiased font-sans">
-      {/* Top Demo Banner */}
-      <DemoBanner />
-
       {/* Sidebar Navigation */}
       <Sidebar
         activeTab={activeTab}

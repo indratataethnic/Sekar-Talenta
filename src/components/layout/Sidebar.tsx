@@ -34,7 +34,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   isOpen,
   onClose
 }) => {
-  const { currentUser, role, logout, switchRole, isSuperAdmin, isGuruKelas, isPembina, isMurid } = useAuth();
+  const { currentUser, role, logout, isMurid } = useAuth();
 
   const getRoleBadge = (r: UserRole | null) => {
     switch (r) {
@@ -127,41 +127,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
               </button>
             );
           })}
-        </div>
-
-        {/* Quick Role Switcher for 4 clean roles */}
-        <div className="p-3 mx-3 mb-3 rounded-2xl bg-emerald-900/30 border border-emerald-700/30">
-          <div className="flex items-center justify-between mb-1.5">
-            <span className="text-[11px] font-bold text-amber-300 flex items-center gap-1">
-              <UserCheck className="w-3.5 h-3.5" /> Ganti Peran Cepat:
-            </span>
-          </div>
-          <div className="grid grid-cols-2 gap-1 text-[11px]">
-            <button
-              onClick={() => switchRole('super_admin')}
-              className={`p-1.5 rounded-lg text-left transition-colors ${role === 'super_admin' ? 'bg-amber-400 text-amber-950 font-bold' : 'text-slate-300 hover:bg-emerald-800/60'}`}
-            >
-              👑 Super Admin
-            </button>
-            <button
-              onClick={() => switchRole('guru_kelas')}
-              className={`p-1.5 rounded-lg text-left transition-colors ${role === 'guru_kelas' ? 'bg-amber-400 text-amber-950 font-bold' : 'text-slate-300 hover:bg-emerald-800/60'}`}
-            >
-              👩‍🏫 Guru Kelas
-            </button>
-            <button
-              onClick={() => switchRole('pembina')}
-              className={`p-1.5 rounded-lg text-left transition-colors ${role === 'pembina' ? 'bg-amber-400 text-amber-950 font-bold' : 'text-slate-300 hover:bg-emerald-800/60'}`}
-            >
-              🛡️ Pembina
-            </button>
-            <button
-              onClick={() => switchRole('murid')}
-              className={`p-1.5 rounded-lg text-left transition-colors ${role === 'murid' ? 'bg-amber-400 text-amber-950 font-bold' : 'text-slate-300 hover:bg-emerald-800/60'}`}
-            >
-              🎒 Murid / Ortu
-            </button>
-          </div>
         </div>
 
         {/* Active Role & Logout */}

@@ -38,11 +38,8 @@ export const SettingsView: React.FC = () => {
     schoolProfile,
     updateSchoolProfile,
     auditLogs,
-    resetToDemoData,
-    clearAllDemoData,
     exportAllDataAsJson,
     importAllDataFromJson,
-    isDemoMode,
     isCloudConnected,
     testCloudConnection,
     seedInitialDataToFirestore
@@ -74,10 +71,6 @@ export const SettingsView: React.FC = () => {
   // JSON Restore
   const [restoreText, setRestoreText] = useState('');
   const [restoreMsg, setRestoreMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
-
-  // Demo dialogs
-  const [showResetConfirm, setShowResetConfirm] = useState(false);
-  const [showClearConfirm, setShowClearConfirm] = useState(false);
 
   const handleSaveProfile = (e: React.FormEvent) => {
     e.preventDefault();
@@ -398,32 +391,6 @@ export const SettingsView: React.FC = () => {
               )}
             </Card>
           </div>
-
-          {/* Reset Demo Controls */}
-          <Card className="p-6 space-y-4 border-amber-200 bg-amber-50/20">
-            <div className="flex items-center gap-2 text-amber-900 font-bold">
-              <RotateCcw className="w-5 h-5 text-amber-600" />
-              <h4>Pengendali Data Demonstrasi (DEMO)</h4>
-            </div>
-            <p className="text-xs text-slate-600 leading-relaxed">
-              Anda dapat mereset data ke set demonstrasi lengkap UPT SDN Karanganyar atau mengosongkan seluruh data demo saat sekolah siap memasukkan data riil.
-            </p>
-
-            <div className="flex flex-wrap gap-2 pt-2">
-              <button
-                onClick={() => setShowResetConfirm(true)}
-                className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-amber-950 font-bold text-xs shadow-2xs transition-all active:scale-95"
-              >
-                Reset ke Paket Demo Awal
-              </button>
-              <button
-                onClick={() => setShowClearConfirm(true)}
-                className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs shadow-2xs transition-all active:scale-95"
-              >
-                Kosongkan Seluruh Data Demo
-              </button>
-            </div>
-          </Card>
         </div>
       )}
 
@@ -755,26 +722,6 @@ export const SettingsView: React.FC = () => {
         message="Akun pengguna ini akan dihapus dari sistem."
         type="danger"
         confirmText="Hapus Akun"
-      />
-
-      <ConfirmDialog
-        isOpen={showResetConfirm}
-        onClose={() => setShowResetConfirm(false)}
-        onConfirm={resetToDemoData}
-        title="Reset Data Demonstrasi?"
-        message="Data akan dikembalikan ke set data percontohan lengkap UPT SDN Karanganyar."
-        type="warning"
-        confirmText="Reset Data"
-      />
-
-      <ConfirmDialog
-        isOpen={showClearConfirm}
-        onClose={() => setShowClearConfirm(false)}
-        onConfirm={clearAllDemoData}
-        title="Hapus Seluruh Data Demo?"
-        message="Semua data demo murid, presensi, dan portofolio akan dihapus agar bersih untuk data asli."
-        type="danger"
-        confirmText="Kosongkan Data"
       />
     </div>
   );
