@@ -3,11 +3,11 @@ import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
 import { Teacher } from '../../types';
 import { Card } from '../common/Card';
-import { Badge } from '../common/Badge';
 import { ConfirmDialog } from '../common/ConfirmDialog';
 import { TeacherFormModal } from './TeacherFormModal';
 import { TeacherDetailModal } from './TeacherDetailModal';
 import { TeacherCsvImportModal } from './TeacherCsvImportModal';
+import { getEffectiveTeacherDuties } from '../../utils/teacherUtils';
 import {
   GraduationCap,
   Plus,
@@ -17,23 +17,24 @@ import {
   Trash2,
   Edit2,
   Eye,
-  Phone,
-  Mail,
   Award,
   Briefcase,
   Users,
   Printer,
   ChevronLeft,
   ChevronRight,
-  Filter
+  Globe2,
+  School,
+  Building2
 } from 'lucide-react';
 
 export const TeacherListView: React.FC = () => {
-  const { teachers, deleteTeacher, deleteAllTeachers, schoolProfile } = useData();
+  const { teachers, ambassadorTypes, extracurriculars, deleteTeacher, deleteAllTeachers, schoolProfile } = useData();
   const { role } = useAuth();
 
   // Search & Filter States
   const [searchTerm, setSearchTerm] = useState('');
+  const [typeFilter, setTypeFilter] = useState<'ALL' | 'internal' | 'external'>('ALL');
   const [positionFilter, setPositionFilter] = useState('ALL');
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [currentPage, setCurrentPage] = useState(1);
@@ -59,16 +60,35 @@ export const TeacherListView: React.FC = () => {
     return Array.from(set).sort();
   }, [teachers]);
 
+  // Map teachers with effective duties (auto-derived from Duta & Ekskul + manual)
+  const teachersWithDuties = useMemo(() => {
+    return teachers.map((teacher) => {
+      const effectiveDuties = getEffectiveTeacherDuties(teacher, ambassadorTypes, extracurriculars);
+      return {
+        ...teacher,
+        effectiveDuties
+      };
+    });
+  }, [teachers, ambassadorTypes, extracurriculars]);
+
   // Filtered & Searched Teachers
   const filteredTeachers = useMemo(() => {
-    return teachers.filter((teacher) => {
+    return teachersWithDuties.filter((teacher) => {
+      const isExternal = teacher.teacherType === 'external';
+
+      const matchType =
+        typeFilter === 'ALL' ||
+        (typeFilter === 'internal' && !isExternal) ||
+        (typeFilter === 'external' && isExternal);
+
       const matchSearch =
         searchTerm === '' ||
         teacher.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
         (teacher.nip && teacher.nip.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (teacher.organization && teacher.organization.toLowerCase().includes(searchTerm.toLowerCase())) ||
         teacher.position.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (teacher.additionalDuties &&
-          teacher.additionalDuties.toLowerCase().includes(searchTerm.toLowerCase()));
+        (teacher.effectiveDuties &&
+          teacher.effectiveDuties.toLowerCase().includes(searchTerm.toLowerCase()));
 
       const matchPosition =
         positionFilter === 'ALL' || teacher.position === positionFilter;
@@ -78,9 +98,9 @@ export const TeacherListView: React.FC = () => {
         (statusFilter === 'ACTIVE' && teacher.isActive) ||
         (statusFilter === 'INACTIVE' && !teacher.isActive);
 
-      return matchSearch && matchPosition && matchStatus;
+      return matchType && matchSearch && matchPosition && matchStatus;
     });
-  }, [teachers, searchTerm, positionFilter, statusFilter]);
+  }, [teachersWithDuties, typeFilter, searchTerm, positionFilter, statusFilter]);
 
   // Pagination
   const totalPages = Math.ceil(filteredTeachers.length / itemsPerPage) || 1;
@@ -91,9 +111,9 @@ export const TeacherListView: React.FC = () => {
 
   // Statistics
   const totalTeachers = teachers.length;
-  const activeTeachers = teachers.filter((t) => t.isActive).length;
-  const dutyTeachers = teachers.filter((t) => t.additionalDuties && t.additionalDuties.trim().length > 0).length;
-  const homeroomTeachers = teachers.filter((t) => t.position.toLowerCase().includes('guru kelas')).length;
+  const internalTeachers = teachers.filter((t) => t.teacherType !== 'external').length;
+  const externalCoaches = teachers.filter((t) => t.teacherType === 'external').length;
+  const dutyTeachers = teachersWithDuties.filter((t) => t.effectiveDuties && t.effectiveDuties.trim().length > 0).length;
 
   // Single delete
   const handleDeleteTeacher = async () => {
@@ -117,15 +137,24 @@ export const TeacherListView: React.FC = () => {
   const handleExportCsv = () => {
     if (teachers.length === 0) return;
 
-    const headers = ['No', 'Nama Guru', 'NIP', 'Jabatan', 'Tugas Tambahan', 'No Telepon', 'Email', 'Status'];
-    const rows = teachers.map((t, idx) => [
+    const headers = [
+      'No',
+      'Nama Pendidik/Pembina',
+      'Tipe',
+      'Asal Lembaga/Sanggar',
+      'NIP/ID Lisensi',
+      'Jabatan/Peran',
+      'Tugas Tambahan (Otomatis & Manual)',
+      'Status'
+    ];
+    const rows = teachersWithDuties.map((t, idx) => [
       idx + 1,
       `"${t.fullName.replace(/"/g, '""')}"`,
+      `"${t.teacherType === 'external' ? 'Pembina Luar (Eksternal)' : 'Guru Internal'}"`,
+      `"${(t.organization || '-').replace(/"/g, '""')}"`,
       `"${(t.nip || '-').replace(/"/g, '""')}"`,
       `"${t.position.replace(/"/g, '""')}"`,
-      `"${(t.additionalDuties || '-').replace(/"/g, '""')}"`,
-      `"${(t.phone || '-').replace(/"/g, '""')}"`,
-      `"${(t.email || '-').replace(/"/g, '""')}"`,
+      `"${(t.effectiveDuties || '-').replace(/"/g, '""')}"`,
       t.isActive ? 'Aktif' : 'Non-Aktif'
     ]);
 
@@ -134,7 +163,7 @@ export const TeacherListView: React.FC = () => {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.setAttribute('download', `data_guru_${schoolProfile.npsn}_${new Date().toISOString().slice(0, 10)}.csv`);
+    link.setAttribute('download', `data_guru_dan_pembina_${schoolProfile.npsn}_${new Date().toISOString().slice(0, 10)}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -152,14 +181,14 @@ export const TeacherListView: React.FC = () => {
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2">
-              <GraduationCap className="w-6 h-6 text-emerald-700" /> Data Guru & Tenaga Pendidik
+              <GraduationCap className="w-6 h-6 text-emerald-700" /> Data Guru & Pembina
             </h1>
             <span className="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold">
-              {teachers.length} Guru
+              {teachers.length} Pendidik & Pembina
             </span>
           </div>
           <p className="text-xs text-slate-500 mt-1">
-            Daftar tenaga pendidik, wali kelas, guru mata pelajaran, dan pembina talenta {schoolProfile.name}
+            Daftar tenaga pendidik internal sekolah dan pembina/pelatih ahli dari luar sekolah {schoolProfile.name}
           </p>
         </div>
 
@@ -169,7 +198,7 @@ export const TeacherListView: React.FC = () => {
             <button
               onClick={handlePrint}
               className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 text-xs font-bold shadow-2xs transition-all active:scale-95"
-              title="Cetak Daftar Guru"
+              title="Cetak Daftar Guru & Pembina"
             >
               <Printer className="w-3.5 h-3.5 text-slate-600" /> Cetak
             </button>
@@ -190,7 +219,7 @@ export const TeacherListView: React.FC = () => {
                 <button
                   onClick={() => setIsDeleteAllModalOpen(true)}
                   className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-bold transition-all active:scale-95 shadow-2xs"
-                  title="Hapus Seluruh Data Guru"
+                  title="Hapus Seluruh Data"
                 >
                   <Trash2 className="w-3.5 h-3.5 text-rose-600" /> Hapus Semua Data
                 </button>
@@ -210,7 +239,7 @@ export const TeacherListView: React.FC = () => {
                 }}
                 className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold shadow-md shadow-emerald-900/20 transition-all active:scale-95"
               >
-                <Plus className="w-3.5 h-3.5" /> Tambah Guru
+                <Plus className="w-3.5 h-3.5" /> Tambah Guru / Pembina
               </button>
             </>
           )}
@@ -225,7 +254,7 @@ export const TeacherListView: React.FC = () => {
               <Users className="w-4 h-4" />
             </div>
             <div>
-              <p className="text-[11px] font-bold text-slate-500 uppercase">Total Pendidik</p>
+              <p className="text-[11px] font-bold text-slate-500 uppercase">Total Pendidik & Pembina</p>
               <h3 className="text-xl font-black text-slate-900">{totalTeachers}</h3>
             </div>
           </div>
@@ -234,11 +263,23 @@ export const TeacherListView: React.FC = () => {
         <Card className="p-3.5 bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200/80">
           <div className="flex items-center gap-3">
             <div className="p-2.5 rounded-xl bg-blue-600 text-white shadow-xs">
-              <GraduationCap className="w-4 h-4" />
+              <School className="w-4 h-4" />
             </div>
             <div>
-              <p className="text-[11px] font-bold text-slate-500 uppercase">Guru Kelas</p>
-              <h3 className="text-xl font-black text-slate-900">{homeroomTeachers}</h3>
+              <p className="text-[11px] font-bold text-slate-500 uppercase">Guru Internal</p>
+              <h3 className="text-xl font-black text-slate-900">{internalTeachers}</h3>
+            </div>
+          </div>
+        </Card>
+
+        <Card className="p-3.5 bg-gradient-to-br from-purple-50 to-fuchsia-50 border-purple-200/80">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 rounded-xl bg-purple-600 text-white shadow-xs">
+              <Globe2 className="w-4 h-4" />
+            </div>
+            <div>
+              <p className="text-[11px] font-bold text-slate-500 uppercase">Pembina Luar / Eksternal</p>
+              <h3 className="text-xl font-black text-purple-900">{externalCoaches}</h3>
             </div>
           </div>
         </Card>
@@ -249,23 +290,58 @@ export const TeacherListView: React.FC = () => {
               <Award className="w-4 h-4" />
             </div>
             <div>
-              <p className="text-[11px] font-bold text-slate-500 uppercase">Tugas Khusus/Pembina</p>
+              <p className="text-[11px] font-bold text-slate-500 uppercase">Tugas Khusus / Pembina</p>
               <h3 className="text-xl font-black text-slate-900">{dutyTeachers}</h3>
             </div>
           </div>
         </Card>
+      </div>
 
-        <Card className="p-3.5 bg-gradient-to-br from-teal-50 to-cyan-50 border-teal-200/80">
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-xl bg-teal-600 text-white shadow-xs">
-              <Briefcase className="w-4 h-4" />
-            </div>
-            <div>
-              <p className="text-[11px] font-bold text-slate-500 uppercase">Status Aktif</p>
-              <h3 className="text-xl font-black text-slate-900">{activeTeachers}</h3>
-            </div>
-          </div>
-        </Card>
+      {/* Category Type Filter Tabs */}
+      <div className="flex flex-wrap items-center gap-2 border-b border-slate-200 pb-2">
+        <button
+          onClick={() => {
+            setTypeFilter('ALL');
+            setCurrentPage(1);
+          }}
+          className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
+            typeFilter === 'ALL'
+              ? 'bg-slate-900 text-white shadow-2xs'
+              : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+          }`}
+        >
+          Semua ({teachers.length})
+        </button>
+
+        <button
+          onClick={() => {
+            setTypeFilter('internal');
+            setCurrentPage(1);
+          }}
+          className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+            typeFilter === 'internal'
+              ? 'bg-emerald-700 text-white shadow-2xs'
+              : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+          }`}
+        >
+          <School className="w-3.5 h-3.5" />
+          <span>🏫 Guru & Tendik Internal ({internalTeachers})</span>
+        </button>
+
+        <button
+          onClick={() => {
+            setTypeFilter('external');
+            setCurrentPage(1);
+          }}
+          className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+            typeFilter === 'external'
+              ? 'bg-purple-700 text-white shadow-2xs'
+              : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+          }`}
+        >
+          <Globe2 className="w-3.5 h-3.5" />
+          <span>🌐 Pembina / Pelatih Luar ({externalCoaches})</span>
+        </button>
       </div>
 
       {/* Filter and Search Bar */}
@@ -280,7 +356,7 @@ export const TeacherListView: React.FC = () => {
                 setSearchTerm(e.target.value);
                 setCurrentPage(1);
               }}
-              placeholder="Cari nama guru, NIP, jabatan, atau tugas tambahan..."
+              placeholder="Cari nama, asal sanggar/klub, NIP, jabatan, atau tugas..."
               className="w-full pl-9 pr-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-emerald-600 font-medium bg-slate-50/50"
             />
             <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
@@ -296,7 +372,7 @@ export const TeacherListView: React.FC = () => {
               }}
               className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-emerald-600 font-medium text-slate-700 bg-slate-50/50"
             >
-              <option value="ALL">Semua Jabatan</option>
+              <option value="ALL">Semua Jabatan & Peran</option>
               {uniquePositions.map((pos) => (
                 <option key={pos} value={pos}>
                   {pos}
@@ -316,23 +392,23 @@ export const TeacherListView: React.FC = () => {
               className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-emerald-600 font-medium text-slate-700 bg-slate-50/50"
             >
               <option value="ALL">Semua Status</option>
-              <option value="ACTIVE">Aktif Mengajar</option>
+              <option value="ACTIVE">Aktif Membina / Mengajar</option>
               <option value="INACTIVE">Non-Aktif / Purna</option>
             </select>
           </div>
         </div>
       </Card>
 
-      {/* Main Table: No, Nama Guru, Jabatan, Tugas Tambahan, Aksi */}
+      {/* Main Table: No, Nama Guru/Pembina, Kategori & Asal, Jabatan, Tugas Tambahan, Aksi */}
       <Card className="p-0 overflow-hidden border-slate-200 shadow-xs">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse text-xs">
             <thead>
               <tr className="bg-slate-50/80 border-b border-slate-200 text-slate-600 font-bold uppercase tracking-wider text-[11px]">
                 <th className="p-4 w-12 text-center">No</th>
-                <th className="p-4">Nama Guru</th>
-                <th className="p-4">Jabatan</th>
-                <th className="p-4">Tugas Tambahan</th>
+                <th className="p-4">Nama & Asal Pendidik</th>
+                <th className="p-4">Jabatan / Peran</th>
+                <th className="p-4">Tugas Tambahan / Pembinaan</th>
                 <th className="p-4 text-right">Aksi</th>
               </tr>
             </thead>
@@ -340,16 +416,20 @@ export const TeacherListView: React.FC = () => {
               {paginatedTeachers.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="text-center py-12 text-slate-400">
-                    Tidak ada data guru yang sesuai kriteria pencarian.
+                    Tidak ada data yang sesuai kriteria pencarian.
                   </td>
                 </tr>
               ) : (
                 paginatedTeachers.map((teacher, index) => {
                   const itemNumber = (currentPage - 1) * itemsPerPage + index + 1;
+                  const isExternal = teacher.teacherType === 'external';
+
                   return (
                     <tr
                       key={teacher.id}
-                      className="hover:bg-emerald-50/40 transition-colors group cursor-pointer"
+                      className={`transition-colors group cursor-pointer ${
+                        isExternal ? 'hover:bg-purple-50/40' : 'hover:bg-emerald-50/40'
+                      }`}
                       onClick={() => setSelectedTeacherForDetail(teacher)}
                     >
                       {/* No */}
@@ -357,7 +437,7 @@ export const TeacherListView: React.FC = () => {
                         {itemNumber}
                       </td>
 
-                      {/* Nama Guru */}
+                      {/* Nama & Asal Pendidik */}
                       <td className="p-4">
                         <div className="flex items-center gap-3">
                           <img
@@ -368,44 +448,64 @@ export const TeacherListView: React.FC = () => {
                               )}`
                             }
                             alt=""
-                            className="w-10 h-10 rounded-xl object-cover bg-slate-100 border border-slate-200 flex-shrink-0"
+                            className={`w-10 h-10 rounded-xl object-cover p-0.5 border flex-shrink-0 ${
+                              isExternal ? 'border-purple-300 bg-purple-50' : 'border-slate-200 bg-slate-100'
+                            }`}
                           />
                           <div>
-                            <p className="font-bold text-slate-900 group-hover:text-emerald-800 transition-colors">
-                              {teacher.fullName}
-                            </p>
-                            <div className="flex flex-wrap items-center gap-2 mt-0.5">
-                              {teacher.nip ? (
-                                <span className="font-mono text-[10px] text-slate-400">
-                                  NIP: {teacher.nip}
+                            <div className="flex items-center gap-2">
+                              <p className={`font-bold transition-colors ${
+                                isExternal ? 'text-purple-950 group-hover:text-purple-800' : 'text-slate-900 group-hover:text-emerald-800'
+                              }`}>
+                                {teacher.fullName}
+                              </p>
+                              {isExternal ? (
+                                <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-extrabold bg-purple-100 text-purple-800 border border-purple-200">
+                                  <Globe2 className="w-2.5 h-2.5" /> Pembina Luar
                                 </span>
                               ) : (
-                                <span className="text-[10px] text-slate-400 italic">Non-NIP</span>
-                              )}
-                              {teacher.phone && (
-                                <span className="font-mono text-[10px] text-emerald-600 flex items-center gap-0.5">
-                                  <Phone className="w-2.5 h-2.5" /> {teacher.phone}
+                                <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-600">
+                                  Internal
                                 </span>
+                              )}
+                            </div>
+
+                            <div className="flex flex-wrap items-center gap-2 mt-0.5">
+                              {isExternal && teacher.organization && (
+                                <span className="text-[10px] text-purple-700 font-semibold flex items-center gap-1">
+                                  <Building2 className="w-2.5 h-2.5 text-purple-500" /> {teacher.organization}
+                                </span>
+                              )}
+                              {teacher.nip ? (
+                                <span className="font-mono text-[10px] text-slate-400">
+                                  {isExternal ? 'ID/Lisensi:' : 'NIP:'} {teacher.nip}
+                                </span>
+                              ) : !isExternal && (
+                                <span className="text-[10px] text-slate-400 italic">Non-NIP</span>
                               )}
                             </div>
                           </div>
                         </div>
                       </td>
 
-                      {/* Jabatan */}
+                      {/* Jabatan / Peran */}
                       <td className="p-4">
-                        <span className="inline-flex items-center gap-1 font-bold px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-900 border border-emerald-200/80 text-[11px]">
-                          <Briefcase className="w-3 h-3 text-emerald-700" />
+                        <span className={`inline-flex items-center gap-1 font-bold px-2.5 py-1 rounded-lg text-[11px] border ${
+                          isExternal
+                            ? 'bg-purple-50 text-purple-900 border-purple-200'
+                            : 'bg-emerald-50 text-emerald-900 border-emerald-200/80'
+                        }`}>
+                          <Briefcase className={`w-3 h-3 ${isExternal ? 'text-purple-700' : 'text-emerald-700'}`} />
                           {teacher.position}
                         </span>
                       </td>
 
-                      {/* Tugas Tambahan */}
+                      {/* Tugas Tambahan (Otomatis & Manual) */}
                       <td className="p-4 max-w-xs">
-                        {teacher.additionalDuties ? (
+                        {teacher.effectiveDuties ? (
                           <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-50 text-amber-900 border border-amber-200/80 text-[11px] font-semibold leading-relaxed">
                             <Award className="w-3 h-3 text-amber-600 flex-shrink-0" />
-                            <span className="line-clamp-2">{teacher.additionalDuties}</span>
+                            <span className="line-clamp-2">{teacher.effectiveDuties}</span>
                           </span>
                         ) : (
                           <span className="text-slate-400 italic text-[11px]">-</span>
@@ -418,7 +518,7 @@ export const TeacherListView: React.FC = () => {
                           <button
                             onClick={() => setSelectedTeacherForDetail(teacher)}
                             className="p-1.5 rounded-lg text-slate-500 hover:text-emerald-700 hover:bg-emerald-50 transition-colors"
-                            title="Lihat Detail Profil Guru"
+                            title="Lihat Detail Profil"
                           >
                             <Eye className="w-4 h-4" />
                           </button>
@@ -431,7 +531,7 @@ export const TeacherListView: React.FC = () => {
                                   setIsFormOpen(true);
                                 }}
                                 className="p-1.5 rounded-lg text-slate-500 hover:text-blue-700 hover:bg-blue-50 transition-colors"
-                                title="Edit Data Guru"
+                                title="Edit Data"
                               >
                                 <Edit2 className="w-4 h-4" />
                               </button>
@@ -439,7 +539,7 @@ export const TeacherListView: React.FC = () => {
                               <button
                                 onClick={() => setDeletingTeacherId(teacher.id)}
                                 className="p-1.5 rounded-lg text-slate-500 hover:text-rose-700 hover:bg-rose-50 transition-colors"
-                                title="Hapus Data Guru"
+                                title="Hapus Data"
                               >
                                 <Trash2 className="w-4 h-4" />
                               </button>
@@ -459,7 +559,7 @@ export const TeacherListView: React.FC = () => {
         {totalPages > 1 && (
           <div className="flex items-center justify-between p-4 border-t border-slate-200 text-xs bg-slate-50/50">
             <span className="text-slate-500">
-              Menampilkan {paginatedTeachers.length} dari {filteredTeachers.length} data guru
+              Menampilkan {paginatedTeachers.length} dari {filteredTeachers.length} data pendidik & pembina
             </span>
             <div className="flex items-center gap-1.5">
               <button
@@ -516,10 +616,10 @@ export const TeacherListView: React.FC = () => {
         isOpen={!!deletingTeacherId}
         onClose={() => setDeletingTeacherId(null)}
         onConfirm={handleDeleteTeacher}
-        title="Hapus Data Guru?"
-        message="Data guru yang dipilih akan dihapus dari sistem. Tindakan ini tidak dapat dibatalkan."
+        title="Hapus Data Guru / Pembina?"
+        message="Data yang dipilih akan dihapus dari sistem. Tindakan ini tidak dapat dibatalkan."
         type="danger"
-        confirmText="Hapus Guru"
+        confirmText="Hapus Data"
       />
 
       {/* Delete All Confirm Dialog */}
@@ -527,10 +627,10 @@ export const TeacherListView: React.FC = () => {
         isOpen={isDeleteAllModalOpen}
         onClose={() => setIsDeleteAllModalOpen(false)}
         onConfirm={handleDeleteAll}
-        title="Hapus Seluruh Data Guru?"
-        message={`PERINGATAN: Anda akan menghapus seluruh (${teachers.length}) data guru yang tersimpan di sistem. Tindakan ini tidak dapat dibatalkan.`}
+        title="Hapus Seluruh Data Guru & Pembina?"
+        message={`PERINGATAN: Anda akan menghapus seluruh (${teachers.length}) data pendidik dan pembina yang tersimpan di sistem. Tindakan ini tidak dapat dibatalkan.`}
         type="danger"
-        confirmText={isDeletingAll ? 'Menghapus Semua...' : 'Ya, Hapus Semua Data Guru'}
+        confirmText={isDeletingAll ? 'Menghapus Semua...' : 'Ya, Hapus Semua Data'}
       />
     </div>
   );

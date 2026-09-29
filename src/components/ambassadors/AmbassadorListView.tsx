@@ -12,23 +12,32 @@ import {
   Users,
   CalendarCheck,
   HeartHandshake,
-  Edit2
+  Edit2,
+  Trash2
 } from 'lucide-react';
 import { AmbassadorType } from '../../types';
 import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
 import { Card } from '../common/Card';
 import { Badge } from '../common/Badge';
+import { ConfirmDialog } from '../common/ConfirmDialog';
 import { AmbassadorDetailView } from './AmbassadorDetailView';
 import { AmbassadorTypeModal } from './AmbassadorTypeModal';
 
 export const AmbassadorListView: React.FC = () => {
-  const { ambassadorTypes, ambassadorMembers, ambassadorPrograms } = useData();
-  const { isSuperAdmin, canManageAmbassadorType } = useAuth();
+  const { ambassadorTypes, ambassadorMembers, deleteAmbassadorType } = useData();
+  const { isSuperAdmin, isGuruKelas, isPembina, isMurid, canManageAmbassadorType } = useAuth();
 
   const [selectedAmbassador, setSelectedAmbassador] = useState<AmbassadorType | null>(null);
   const [isTypeModalOpen, setIsTypeModalOpen] = useState(false);
   const [editingAmbassadorType, setEditingAmbassadorType] = useState<AmbassadorType | null>(null);
+  const [deletingType, setDeletingType] = useState<AmbassadorType | null>(null);
+
+  const canManage = !isMurid;
+
+  const currentSelectedAmbassador = selectedAmbassador
+    ? ambassadorTypes.find((t) => t.id === selectedAmbassador.id) || selectedAmbassador
+    : null;
 
   const getDutaIcon = (iconName: string) => {
     switch (iconName) {
@@ -49,13 +58,13 @@ export const AmbassadorListView: React.FC = () => {
     }
   };
 
-  if (selectedAmbassador) {
+  if (currentSelectedAmbassador) {
     return (
       <AmbassadorDetailView
-        ambassadorType={selectedAmbassador}
+        ambassadorType={currentSelectedAmbassador}
         onBack={() => setSelectedAmbassador(null)}
         onEdit={() => {
-          setEditingAmbassadorType(selectedAmbassador);
+          setEditingAmbassadorType(currentSelectedAmbassador);
           setIsTypeModalOpen(true);
         }}
       />
@@ -76,7 +85,7 @@ export const AmbassadorListView: React.FC = () => {
           </p>
         </div>
 
-        {isSuperAdmin && (
+        {canManage && (
           <button
             onClick={() => {
               setEditingAmbassadorType(null);
@@ -93,14 +102,13 @@ export const AmbassadorListView: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {ambassadorTypes.map((type) => {
           const membersCount = ambassadorMembers.filter((m) => m.ambassadorTypeId === type.id).length;
-          const canManage = isSuperAdmin || canManageAmbassadorType(type.id) || canManageAmbassadorType(type.code);
 
           return (
             <Card
               key={type.id}
               hoverable
               onClick={() => setSelectedAmbassador(type)}
-              className="flex flex-col justify-between p-5 border-slate-200/80 group relative"
+              className="flex flex-col justify-between p-5 border-slate-200/80 group relative hover:border-purple-300 transition-all cursor-pointer"
             >
               <div className="space-y-3">
                 <div className="flex items-start justify-between gap-2">
@@ -109,18 +117,31 @@ export const AmbassadorListView: React.FC = () => {
                   </div>
                   <div className="flex items-center gap-1.5">
                     {canManage && (
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setEditingAmbassadorType(type);
-                          setIsTypeModalOpen(true);
-                        }}
-                        className="p-1.5 rounded-lg text-slate-400 hover:text-emerald-700 hover:bg-emerald-50 transition-colors"
-                        title="Edit Data Duta"
-                      >
-                        <Edit2 className="w-4 h-4" />
-                      </button>
+                      <>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setEditingAmbassadorType(type);
+                            setIsTypeModalOpen(true);
+                          }}
+                          className="p-1.5 rounded-lg text-slate-400 hover:text-emerald-700 hover:bg-emerald-50 transition-colors"
+                          title="Edit Bidang Duta"
+                        >
+                          <Edit2 className="w-4 h-4" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setDeletingType(type);
+                          }}
+                          className="p-1.5 rounded-lg text-rose-500 hover:text-rose-700 hover:bg-rose-50 transition-colors"
+                          title="Hapus Bidang Duta"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </>
                     )}
                     <Badge variant="purple" size="sm">
                       {membersCount} Kader
@@ -147,22 +168,36 @@ export const AmbassadorListView: React.FC = () => {
                   <span className="font-semibold text-slate-700">{type.coachName}</span>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5">
                   {canManage && (
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setEditingAmbassadorType(type);
-                        setIsTypeModalOpen(true);
-                      }}
-                      className="text-xs font-bold text-slate-500 hover:text-emerald-700 flex items-center gap-1 px-2 py-1 rounded-lg hover:bg-slate-100 transition-colors"
-                    >
-                      <Edit2 className="w-3 h-3" /> Edit
-                    </button>
+                    <>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setEditingAmbassadorType(type);
+                          setIsTypeModalOpen(true);
+                        }}
+                        className="text-xs font-bold text-slate-600 hover:text-emerald-700 flex items-center gap-1 px-2 py-1 rounded-lg hover:bg-slate-100 transition-colors"
+                        title="Edit Bidang Duta"
+                      >
+                        <Edit2 className="w-3.5 h-3.5" /> Edit
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setDeletingType(type);
+                        }}
+                        className="text-xs font-bold text-rose-600 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 flex items-center gap-1 px-2.5 py-1 rounded-lg border border-rose-200 transition-colors shadow-2xs"
+                        title="Hapus Bidang Duta"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" /> Hapus
+                      </button>
+                    </>
                   )}
-                  <span className="inline-flex items-center gap-1 font-bold text-emerald-700 group-hover:translate-x-1 transition-transform">
-                    Kelola <ArrowRight className="w-3.5 h-3.5" />
+                  <span className="inline-flex items-center gap-1 font-bold text-emerald-700 group-hover:translate-x-1 transition-transform ml-1">
+                    Buka <ArrowRight className="w-3.5 h-3.5" />
                   </span>
                 </div>
               </div>
@@ -178,6 +213,22 @@ export const AmbassadorListView: React.FC = () => {
           setEditingAmbassadorType(null);
         }}
         ambassadorTypeToEdit={editingAmbassadorType}
+      />
+
+      {/* Confirm Delete Dialog */}
+      <ConfirmDialog
+        isOpen={!!deletingType}
+        onClose={() => setDeletingType(null)}
+        onConfirm={async () => {
+          if (deletingType) {
+            await deleteAmbassadorType(deletingType.id);
+            setDeletingType(null);
+          }
+        }}
+        title="Hapus Bidang Duta Sekolah?"
+        message={`Apakah Anda yakin ingin menghapus bidang "${deletingType?.name}"? Seluruh data penugasan kader murid dan program kerja terkait pada bidang ini juga akan dihapus secara permanen.`}
+        type="danger"
+        confirmText="Hapus Bidang Duta"
       />
     </div>
   );

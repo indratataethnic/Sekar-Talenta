@@ -101,6 +101,7 @@ interface DataContextType {
   // Ambassador Actions
   addAmbassadorType: (typeData: Omit<AmbassadorType, 'id'>) => Promise<void>;
   updateAmbassadorType: (id: string, updates: Partial<AmbassadorType>) => Promise<void>;
+  deleteAmbassadorType: (id: string) => Promise<void>;
   addAmbassadorMember: (memberData: Omit<AmbassadorMember, 'id' | 'createdAt'>) => Promise<void>;
   updateAmbassadorMember: (id: string, updates: Partial<AmbassadorMember>) => Promise<void>;
   removeAmbassadorMember: (id: string) => Promise<void>;
@@ -686,6 +687,22 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const deleteAmbassadorType = async (id: string) => {
+    const amb = ambassadorTypes.find((t) => t.id === id);
+    setAmbassadorTypes((prev) => prev.filter((t) => t.id !== id));
+    setAmbassadorMembers((prev) => prev.filter((m) => m.ambassadorTypeId !== id));
+    setAmbassadorPrograms((prev) => prev.filter((p) => p.ambassadorTypeId !== id));
+    logAction('DELETE', 'AmbassadorType', id, `Menghapus bidang Duta: ${amb?.name || id}`);
+
+    if (isFirebaseConfigured && db) {
+      try {
+        await deleteDoc(doc(db, 'ambassadorTypes', id));
+      } catch (err) {
+        handleFirestoreError(err, OperationType.DELETE, `ambassadorTypes/${id}`);
+      }
+    }
+  };
+
   const addAmbassadorMember = async (data: Omit<AmbassadorMember, 'id' | 'createdAt'>) => {
     const newMember: AmbassadorMember = {
       ...data,
@@ -1222,6 +1239,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         updateObservation,
         addAmbassadorType,
         updateAmbassadorType,
+        deleteAmbassadorType,
         addAmbassadorMember,
         updateAmbassadorMember,
         removeAmbassadorMember,

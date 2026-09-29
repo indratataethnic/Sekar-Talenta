@@ -14,7 +14,7 @@ export const AmbassadorTypeModal: React.FC<AmbassadorTypeModalProps> = ({
   onClose,
   ambassadorTypeToEdit
 }) => {
-  const { addAmbassadorType, updateAmbassadorType } = useData();
+  const { addAmbassadorType, updateAmbassadorType, teachers } = useData();
 
   const [name, setName] = useState('');
   const [shortName, setShortName] = useState('');
@@ -143,15 +143,25 @@ export const AmbassadorTypeModal: React.FC<AmbassadorTypeModalProps> = ({
 
           <div>
             <label className="block text-xs font-bold text-slate-700 mb-1">
-              Nama Guru Pembina
+              Nama Guru / Pembina Ahli
             </label>
             <input
               type="text"
+              list="duta-coach-suggestions"
               value={coachName}
               onChange={(e) => setCoachName(e.target.value)}
-              placeholder="Bapak/Ibu Guru Pembina..."
+              placeholder="Pilih atau ketik nama guru / pembina ahli..."
               className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 focus:outline-emerald-600"
             />
+            <datalist id="duta-coach-suggestions">
+              {teachers.map((t) => (
+                <option
+                  key={t.id}
+                  value={t.fullName}
+                  label={`${t.fullName} (${t.teacherType === 'external' ? `Pembina Luar - ${t.organization || 'Eksternal'}` : t.position})`}
+                />
+              ))}
+            </datalist>
           </div>
         </div>
 

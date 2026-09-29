@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import confetti from 'canvas-confetti';
 import { Modal } from '../common/Modal';
-import { Achievement } from '../../types';
+import { Achievement, Student } from '../../types';
 import { useData } from '../../context/DataContext';
+import { StudentSelector } from '../common/StudentSelector';
 
 interface AchievementModalProps {
   isOpen: boolean;
@@ -17,20 +18,40 @@ export const AchievementModal: React.FC<AchievementModalProps> = ({
 }) => {
   const { students, addAchievement, updateAchievement } = useData();
 
-  const [selectedStudentId, setSelectedStudentId] = useState(
-    achievementToEdit?.studentId || students[0]?.id || ''
-  );
-  const [title, setTitle] = useState(achievementToEdit?.title || '');
-  const [eventName, setEventName] = useState(achievementToEdit?.eventName || '');
-  const [level, setLevel] = useState<'sekolah' | 'kecamatan' | 'kota' | 'provinsi' | 'nasional'>(
-    achievementToEdit?.level || 'kota'
-  );
-  const [rank, setRank] = useState<any>(achievementToEdit?.rank || 'Juara 1');
-  const [category, setCategory] = useState(achievementToEdit?.category || 'Seni Budaya');
-  const [date, setDate] = useState(achievementToEdit?.date || new Date().toISOString().split('T')[0]);
-  const [coachName, setCoachName] = useState(achievementToEdit?.coachName || '');
-  const [notes, setNotes] = useState(achievementToEdit?.notes || '');
+  const [selectedStudentId, setSelectedStudentId] = useState('');
+  const [title, setTitle] = useState('');
+  const [eventName, setEventName] = useState('');
+  const [level, setLevel] = useState<'sekolah' | 'kecamatan' | 'kota' | 'provinsi' | 'nasional'>('kota');
+  const [rank, setRank] = useState<any>('Juara 1');
+  const [category, setCategory] = useState('Seni Budaya');
+  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+  const [coachName, setCoachName] = useState('');
+  const [notes, setNotes] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (achievementToEdit) {
+      setSelectedStudentId(achievementToEdit.studentId);
+      setTitle(achievementToEdit.title);
+      setEventName(achievementToEdit.eventName);
+      setLevel(achievementToEdit.level || 'kota');
+      setRank(achievementToEdit.rank || 'Juara 1');
+      setCategory(achievementToEdit.category || 'Seni Budaya');
+      setDate(achievementToEdit.date || new Date().toISOString().split('T')[0]);
+      setCoachName(achievementToEdit.coachName || '');
+      setNotes(achievementToEdit.notes || '');
+    } else {
+      setSelectedStudentId(students[0]?.id || '');
+      setTitle('');
+      setEventName('');
+      setLevel('kota');
+      setRank('Juara 1');
+      setCategory('Seni Budaya');
+      setDate(new Date().toISOString().split('T')[0]);
+      setCoachName('');
+      setNotes('');
+    }
+  }, [achievementToEdit, isOpen, students]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -86,22 +107,19 @@ export const AchievementModal: React.FC<AchievementModalProps> = ({
       maxWidth="md"
     >
       <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label className="block text-xs font-bold text-slate-700 mb-1">
-            Pilih Murid Berprestasi *
-          </label>
-          <select
-            value={selectedStudentId}
-            onChange={(e) => setSelectedStudentId(e.target.value)}
-            className="w-full px-3 py-2 text-xs font-medium rounded-xl border border-slate-300 focus:outline-emerald-600"
-          >
-            {students.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.fullName} ({s.classId} - NISN: {s.nisn})
-              </option>
-            ))}
-          </select>
-        </div>
+        {achievementToEdit ? (
+          <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
+            <p className="text-xs font-bold text-slate-800">{achievementToEdit.studentName}</p>
+            <p className="text-[11px] text-slate-500">{achievementToEdit.classId}</p>
+          </div>
+        ) : (
+          <StudentSelector
+            selectedStudentId={selectedStudentId}
+            onSelectStudent={(st: Student) => setSelectedStudentId(st.id)}
+            label="Pilih Murid Berprestasi (Cari Berdasarkan Kelas / Nama)"
+            required
+          />
+        )}
 
         <div>
           <label className="block text-xs font-bold text-slate-700 mb-1">

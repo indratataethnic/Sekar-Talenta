@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Modal } from '../common/Modal';
-import { Extracurricular } from '../../types';
+import { Extracurricular, Student } from '../../types';
 import { useData } from '../../context/DataContext';
+import { StudentSelector } from '../common/StudentSelector';
 
 interface ExtracurricularRegisterModalProps {
   isOpen: boolean;
@@ -20,6 +21,16 @@ export const ExtracurricularRegisterModal: React.FC<ExtracurricularRegisterModal
   const [coachNotes, setCoachNotes] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errMsg, setErrMsg] = useState('');
+
+  useEffect(() => {
+    if (isOpen) {
+      if (students.length > 0 && !selectedStudentId) {
+        setSelectedStudentId(students[0].id);
+      }
+      setErrMsg('');
+      setCoachNotes('');
+    }
+  }, [isOpen, students]);
 
   const currentMembers = extracurricularMembers.filter((m) => m.extracurricularId === extracurricular.id);
   const isFull = extracurricular.capacity ? currentMembers.length >= extracurricular.capacity : false;
@@ -73,22 +84,12 @@ export const ExtracurricularRegisterModal: React.FC<ExtracurricularRegisterModal
           </div>
         )}
 
-        <div>
-          <label className="block text-xs font-bold text-slate-700 mb-1">
-            Pilih Murid yang Didaftarkan *
-          </label>
-          <select
-            value={selectedStudentId}
-            onChange={(e) => setSelectedStudentId(e.target.value)}
-            className="w-full px-3 py-2 text-xs font-medium rounded-xl border border-slate-300 focus:outline-emerald-600"
-          >
-            {students.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.fullName} ({s.classId} - NISN: {s.nisn})
-              </option>
-            ))}
-          </select>
-        </div>
+        <StudentSelector
+          selectedStudentId={selectedStudentId}
+          onSelectStudent={(st: Student) => setSelectedStudentId(st.id)}
+          label="Pilih Murid yang Didaftarkan (Cari Berdasarkan Kelas / Nama)"
+          required
+        />
 
         <div>
           <label className="block text-xs font-bold text-slate-700 mb-1">

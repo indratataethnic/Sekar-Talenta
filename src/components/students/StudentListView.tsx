@@ -28,6 +28,7 @@ import {
 import { Student } from '../../types';
 import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
+import { isClassMatching } from '../../utils/classUtils';
 import { Card } from '../common/Card';
 import { Badge } from '../common/Badge';
 import { ConfirmDialog } from '../common/ConfirmDialog';
@@ -53,6 +54,17 @@ export const StudentListView: React.FC = () => {
     if (isGuruKelas && currentUser?.assignedClass) return currentUser.assignedClass;
     return 'ALL';
   });
+
+  // Sync selectedClass if user is Guru Kelas
+  React.useEffect(() => {
+    if (isGuruKelas && currentUser?.assignedClass) {
+      setSelectedClass(currentUser.assignedClass);
+    }
+  }, [isGuruKelas, currentUser?.assignedClass]);
+
+  const isClassLocked = isGuruKelas && !!currentUser?.assignedClass;
+  const effectiveClass = isClassLocked ? currentUser.assignedClass : selectedClass;
+
   const [selectedGender, setSelectedGender] = useState('ALL');
   const [interestFilter, setInterestFilter] = useState<'ALL' | 'MAPPED' | 'UNMAPPED'>('ALL');
   const [ambassadorFilter, setAmbassadorFilter] = useState<'ALL' | 'YES' | 'NO'>('ALL');
@@ -88,13 +100,21 @@ export const StudentListView: React.FC = () => {
   const ambassadorStudentIds = useMemo(() => new Set(ambassadorMembers.filter((m) => m.status === 'aktif').map((m) => m.studentId)), [ambassadorMembers]);
   const ekskulStudentIds = useMemo(() => new Set(extracurricularMembers.filter((m) => m.status === 'aktif').map((m) => m.studentId)), [extracurricularMembers]);
 
+  // Students scoped for metrics: if Guru Kelas, strictly scope metrics to their class
+  const classScopedStudents = useMemo(() => {
+    if (isClassLocked) {
+      return students.filter((s) => isClassMatching(s.classId, currentUser.assignedClass));
+    }
+    return students;
+  }, [students, isClassLocked, currentUser?.assignedClass]);
+
   // Metric stats
-  const totalStudents = students.length;
-  const countLaki = students.filter((s) => s.gender === 'L').length;
-  const countPerempuan = students.filter((s) => s.gender === 'P').length;
-  const countMapped = students.filter((s) => mappedStudentIds.has(s.id)).length;
-  const countAmbassadors = students.filter((s) => ambassadorStudentIds.has(s.id)).length;
-  const countEkskul = students.filter((s) => ekskulStudentIds.has(s.id)).length;
+  const totalStudents = classScopedStudents.length;
+  const countLaki = classScopedStudents.filter((s) => s.gender === 'L').length;
+  const countPerempuan = classScopedStudents.filter((s) => s.gender === 'P').length;
+  const countMapped = classScopedStudents.filter((s) => mappedStudentIds.has(s.id)).length;
+  const countAmbassadors = classScopedStudents.filter((s) => ambassadorStudentIds.has(s.id)).length;
+  const countEkskul = classScopedStudents.filter((s) => ekskulStudentIds.has(s.id)).length;
   const mappedPercentage = totalStudents > 0 ? Math.round((countMapped / totalStudents) * 100) : 0;
 
   // Filter students
@@ -108,7 +128,9 @@ export const StudentListView: React.FC = () => {
         (s.nis && s.nis.includes(q)) ||
         (s.parentName && s.parentName.toLowerCase().includes(q));
 
-      const matchesClass = selectedClass === 'ALL' || s.classId === selectedClass;
+      const matchesClass = isClassLocked
+        ? isClassMatching(s.classId, currentUser.assignedClass)
+        : selectedClass === 'ALL' || isClassMatching(s.classId, selectedClass);
       const matchesGender = selectedGender === 'ALL' || s.gender === selectedGender;
       
       const isMapped = mappedStudentIds.has(s.id);
@@ -338,21 +360,30 @@ export const StudentListView: React.FC = () => {
 
           {/* Class Filter */}
           <div className="sm:col-span-2">
-            <select
-              value={selectedClass}
-              onChange={(e) => {
-                setSelectedClass(e.target.value);
-                setCurrentPage(1);
-              }}
-              className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-emerald-600 font-medium text-slate-700 bg-slate-50/50"
-            >
-              <option value="ALL">Semua Kelas</option>
-              {classes.map((c) => (
-                <option key={c.id} value={c.name}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
+            {isClassLocked ? (
+              <div className="px-3 py-2 text-xs rounded-xl border border-emerald-300 bg-emerald-50 text-emerald-950 font-bold flex items-center justify-between shadow-2xs">
+                <span className="truncate">👩‍🏫 {currentUser.assignedClass}</span>
+                <span className="text-[10px] bg-emerald-200 text-emerald-900 px-1.5 py-0.5 rounded font-extrabold flex-shrink-0">
+                  Rombel Anda
+                </span>
+              </div>
+            ) : (
+              <select
+                value={selectedClass}
+                onChange={(e) => {
+                  setSelectedClass(e.target.value);
+                  setCurrentPage(1);
+                }}
+                className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-emerald-600 font-semibold text-slate-700 bg-slate-50/50"
+              >
+                <option value="ALL">Semua Kelas</option>
+                {classes.map((c) => (
+                  <option key={c.id} value={c.name}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+            )}
           </div>
 
           {/* Gender Filter */}

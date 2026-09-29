@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Modal } from '../common/Modal';
 import { Activity, ActivityType, ActivityStatus } from '../../types';
 import { useData } from '../../context/DataContext';
@@ -18,20 +18,52 @@ export const ActivityFormModal: React.FC<ActivityFormModalProps> = ({
   const { ambassadorTypes, extracurriculars, addActivity, updateActivity } = useData();
   const { currentUser } = useAuth();
 
-  const [title, setTitle] = useState(activityToEdit?.title || '');
-  const [type, setType] = useState<ActivityType>(activityToEdit?.type || 'ekstrakurikuler');
-  const [referenceId, setReferenceId] = useState(activityToEdit?.referenceId || extracurriculars[0]?.id || '');
-  const [personInCharge, setPersonInCharge] = useState(activityToEdit?.personInCharge || currentUser?.displayName || '');
-  const [description, setDescription] = useState(activityToEdit?.description || '');
-  const [objectives, setObjectives] = useState(activityToEdit?.objectives || '');
-  const [dateTime, setDateTime] = useState(activityToEdit?.dateTime || '2024-11-15 14:00');
-  const [location, setLocation] = useState(activityToEdit?.location || 'Ruang Karanganyar');
-  const [participantsCount, setParticipantsCount] = useState(activityToEdit?.participantsCount || 25);
-  const [status, setStatus] = useState<ActivityStatus>(activityToEdit?.status || 'rencana');
-  const [outcomeNotes, setOutcomeNotes] = useState(activityToEdit?.outcomeNotes || '');
-  const [reflectionNotes, setReflectionNotes] = useState(activityToEdit?.reflectionNotes || '');
-  const [followUpNotes, setFollowUpNotes] = useState(activityToEdit?.followUpNotes || '');
+  const [title, setTitle] = useState('');
+  const [type, setType] = useState<ActivityType>('ekstrakurikuler');
+  const [referenceId, setReferenceId] = useState('');
+  const [personInCharge, setPersonInCharge] = useState('');
+  const [description, setDescription] = useState('');
+  const [objectives, setObjectives] = useState('');
+  const [dateTime, setDateTime] = useState('2024-11-15 14:00');
+  const [location, setLocation] = useState('Ruang Karanganyar');
+  const [participantsCount, setParticipantsCount] = useState(25);
+  const [status, setStatus] = useState<ActivityStatus>('rencana');
+  const [outcomeNotes, setOutcomeNotes] = useState('');
+  const [reflectionNotes, setReflectionNotes] = useState('');
+  const [followUpNotes, setFollowUpNotes] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (activityToEdit) {
+      setTitle(activityToEdit.title);
+      setType(activityToEdit.type || 'ekstrakurikuler');
+      setReferenceId(activityToEdit.referenceId || '');
+      setPersonInCharge(activityToEdit.personInCharge || currentUser?.displayName || '');
+      setDescription(activityToEdit.description || '');
+      setObjectives(activityToEdit.objectives || '');
+      setDateTime(activityToEdit.dateTime || '2024-11-15 14:00');
+      setLocation(activityToEdit.location || 'Ruang Karanganyar');
+      setParticipantsCount(activityToEdit.participantsCount || 25);
+      setStatus(activityToEdit.status || 'rencana');
+      setOutcomeNotes(activityToEdit.outcomeNotes || '');
+      setReflectionNotes(activityToEdit.reflectionNotes || '');
+      setFollowUpNotes(activityToEdit.followUpNotes || '');
+    } else {
+      setTitle('');
+      setType('ekstrakurikuler');
+      setReferenceId(extracurriculars[0]?.id || '');
+      setPersonInCharge(currentUser?.displayName || 'Koordinator Kegiatan');
+      setDescription('');
+      setObjectives('');
+      setDateTime(new Date().toISOString().slice(0, 16).replace('T', ' '));
+      setLocation('Ruang Karanganyar');
+      setParticipantsCount(25);
+      setStatus('rencana');
+      setOutcomeNotes('');
+      setReflectionNotes('');
+      setFollowUpNotes('');
+    }
+  }, [activityToEdit, isOpen, currentUser, extracurriculars]);
 
   const getReferenceName = (t: ActivityType, id: string) => {
     if (t === 'duta') {

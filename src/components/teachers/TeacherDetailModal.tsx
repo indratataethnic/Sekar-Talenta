@@ -2,7 +2,9 @@ import React from 'react';
 import { Teacher } from '../../types';
 import { Modal } from '../common/Modal';
 import { Badge } from '../common/Badge';
-import { Briefcase, Award, Phone, Mail, Hash, Calendar, CheckCircle2, MessageCircle } from 'lucide-react';
+import { Briefcase, Award, Hash, Calendar, Sparkles, Flag, Trophy, Building2, Globe2, School } from 'lucide-react';
+import { useData } from '../../context/DataContext';
+import { getEffectiveTeacherDuties, getDetectedTeacherDutiesBreakdown } from '../../utils/teacherUtils';
 
 interface TeacherDetailModalProps {
   isOpen: boolean;
@@ -17,125 +19,150 @@ export const TeacherDetailModal: React.FC<TeacherDetailModalProps> = ({
   teacher,
   onEdit
 }) => {
+  const { ambassadorTypes, extracurriculars } = useData();
+
   if (!teacher) return null;
 
-  const getWaLink = (phone?: string) => {
-    if (!phone) return null;
-    const cleanPhone = phone.replace(/\D/g, '');
-    const formatted = cleanPhone.startsWith('0') ? '62' + cleanPhone.slice(1) : cleanPhone;
-    return `https://wa.me/${formatted}`;
-  };
-
-  const waLink = getWaLink(teacher.phone);
+  const isExternal = teacher.teacherType === 'external';
+  const effectiveDuties = getEffectiveTeacherDuties(teacher, ambassadorTypes, extracurriculars);
+  const detectedBreakdown = getDetectedTeacherDutiesBreakdown(teacher.fullName, ambassadorTypes, extracurriculars);
 
   return (
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title="Profil Guru & Tenaga Pendidik"
-      subtitle="UPT SD Negeri Karanganyar Kota Pasuruan"
+      title={isExternal ? 'Profil Pembina / Pelatih Eksternal' : 'Profil Guru & Tenaga Pendidik'}
+      subtitle={isExternal ? `Pembina Ahli Luar Sekolah - ${teacher.organization || 'Mitra Sekolah'}` : 'UPT SD Negeri Karanganyar Kota Pasuruan'}
       maxWidth="md"
     >
       <div className="space-y-5">
         {/* Banner Profile Card */}
-        <div className="flex items-center gap-4 p-4 rounded-2xl bg-gradient-to-r from-emerald-950 via-teal-900 to-emerald-900 text-white shadow-md">
+        <div className={`flex items-center gap-4 p-4 rounded-2xl text-white shadow-md ${
+          isExternal
+            ? 'bg-gradient-to-r from-purple-950 via-indigo-900 to-purple-900'
+            : 'bg-gradient-to-r from-emerald-950 via-teal-900 to-emerald-900'
+        }`}>
           <img
             src={
               teacher.avatarUrl ||
               `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(teacher.fullName)}`
             }
             alt={teacher.fullName}
-            className="w-18 h-18 rounded-2xl object-cover bg-white/10 p-1 border-2 border-amber-300 shadow-md flex-shrink-0"
+            className={`w-18 h-18 rounded-2xl object-cover bg-white/10 p-1 border-2 shadow-md flex-shrink-0 ${
+              isExternal ? 'border-purple-300' : 'border-amber-300'
+            }`}
           />
           <div className="space-y-1 min-w-0">
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-1.5">
               <Badge variant={teacher.isActive ? 'emerald' : 'slate'} dot>
-                {teacher.isActive ? 'Aktif Mengajar' : 'Non-Aktif'}
+                {teacher.isActive ? 'Aktif Membina' : 'Non-Aktif'}
               </Badge>
+              <span className={`px-2 py-0.5 rounded-md text-[10px] font-extrabold flex items-center gap-1 ${
+                isExternal ? 'bg-purple-400/20 text-purple-200 border border-purple-400/40' : 'bg-emerald-400/20 text-emerald-200 border border-emerald-400/40'
+              }`}>
+                {isExternal ? <Globe2 className="w-3 h-3" /> : <School className="w-3 h-3" />}
+                {isExternal ? 'Pembina Luar (Eksternal)' : 'Pendidik Internal'}
+              </span>
             </div>
             <h3 className="font-extrabold text-white text-base leading-snug truncate">
               {teacher.fullName}
             </h3>
-            <p className="text-xs text-amber-300 font-semibold flex items-center gap-1.5">
-              <Briefcase className="w-3.5 h-3.5 text-amber-300" /> {teacher.position}
+            <p className={`text-xs font-semibold flex items-center gap-1.5 ${isExternal ? 'text-purple-200' : 'text-amber-300'}`}>
+              <Briefcase className="w-3.5 h-3.5" /> {teacher.position}
             </p>
           </div>
         </div>
 
         {/* Data List */}
         <div className="bg-slate-50/80 rounded-2xl p-4 border border-slate-200/80 divide-y divide-slate-200 text-xs">
-          {/* NIP */}
+          {/* Asal Lembaga / Sanggar jika Eksternal */}
+          {isExternal && teacher.organization && (
+            <div className="py-2.5 flex items-center justify-between">
+              <span className="text-slate-500 flex items-center gap-1.5 font-medium">
+                <Building2 className="w-3.5 h-3.5 text-purple-600" /> Asal Lembaga / Sanggar / Klub
+              </span>
+              <span className="font-bold text-purple-900 bg-purple-100/80 px-2.5 py-1 rounded-lg border border-purple-200">
+                {teacher.organization}
+              </span>
+            </div>
+          )}
+
+          {/* NIP / No. Identitas */}
           <div className="py-2.5 flex items-center justify-between">
             <span className="text-slate-500 flex items-center gap-1.5 font-medium">
-              <Hash className="w-3.5 h-3.5 text-slate-400" /> NIP / NUPTK
+              <Hash className="w-3.5 h-3.5 text-slate-400" /> {isExternal ? 'No. Lisensi / ID Pelatih' : 'NIP / NUPTK'}
             </span>
             <span className="font-mono font-bold text-slate-800">
-              {teacher.nip || 'Belum diisi / Non-PNS'}
+              {teacher.nip || (isExternal ? '-' : 'Belum diisi / Non-PNS')}
             </span>
           </div>
 
-          {/* Jabatan */}
+          {/* Jabatan / Peran */}
           <div className="py-2.5 flex items-center justify-between">
             <span className="text-slate-500 flex items-center gap-1.5 font-medium">
-              <Briefcase className="w-3.5 h-3.5 text-slate-400" /> Jabatan
+              <Briefcase className="w-3.5 h-3.5 text-slate-400" /> {isExternal ? 'Peran Pembina' : 'Jabatan Utama'}
             </span>
-            <span className="font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+            <span className={`font-bold px-2.5 py-1 rounded-md border ${
+              isExternal
+                ? 'text-purple-800 bg-purple-50 border-purple-200'
+                : 'text-emerald-800 bg-emerald-50 border-emerald-200'
+            }`}>
               {teacher.position}
             </span>
           </div>
 
-          {/* Tugas Tambahan */}
-          <div className="py-2.5 flex flex-col gap-1">
-            <span className="text-slate-500 flex items-center gap-1.5 font-medium">
-              <Award className="w-3.5 h-3.5 text-amber-500" /> Tugas Tambahan / Pembina
-            </span>
-            <div className="font-bold text-slate-800 bg-amber-50/80 border border-amber-200/80 p-2.5 rounded-xl text-xs">
-              {teacher.additionalDuties || 'Tidak ada penugasan tambahan.'}
-            </div>
-          </div>
-
-          {/* Kontak WhatsApp */}
-          <div className="py-2.5 flex items-center justify-between">
-            <span className="text-slate-500 flex items-center gap-1.5 font-medium">
-              <Phone className="w-3.5 h-3.5 text-slate-400" /> No. Telepon / WA
-            </span>
-            <div className="flex items-center gap-2">
-              <span className="font-mono font-bold text-slate-800">
-                {teacher.phone || '-'}
+          {/* Tugas Tambahan & Pembinaan */}
+          <div className="py-3 flex flex-col gap-2">
+            <div className="flex items-center justify-between">
+              <span className="text-slate-600 flex items-center gap-1.5 font-bold">
+                <Award className="w-4 h-4 text-amber-500" /> Tugas Pembinaan & Tambahan
               </span>
-              {waLink && (
-                <a
-                  href={waLink}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-100 hover:bg-emerald-200 text-emerald-800 text-[11px] font-bold"
-                >
-                  <MessageCircle className="w-3 h-3 text-emerald-700" /> Chat WA
-                </a>
+              {detectedBreakdown.length > 0 && (
+                <span className="text-[10px] text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full font-bold flex items-center gap-1">
+                  <Sparkles className="w-3 h-3 text-amber-600" /> Terhubung Otomatis
+                </span>
               )}
             </div>
-          </div>
 
-          {/* Email */}
-          <div className="py-2.5 flex items-center justify-between">
-            <span className="text-slate-500 flex items-center gap-1.5 font-medium">
-              <Mail className="w-3.5 h-3.5 text-slate-400" /> Email Resmi
-            </span>
-            <span className="font-medium text-slate-800">
-              {teacher.email ? (
-                <a href={`mailto:${teacher.email}`} className="text-emerald-700 hover:underline">
-                  {teacher.email}
-                </a>
+            <div className="font-medium text-slate-800 bg-amber-50/90 border border-amber-200 p-3 rounded-xl text-xs space-y-2">
+              {effectiveDuties ? (
+                <p className="font-bold text-slate-900 leading-relaxed">
+                  {effectiveDuties}
+                </p>
               ) : (
-                '-'
+                <p className="text-slate-400 italic">Tidak ada penugasan tambahan.</p>
               )}
-            </span>
+
+              {/* Detected duties list badges */}
+              {detectedBreakdown.length > 0 && (
+                <div className="pt-2 border-t border-amber-200/80 space-y-1.5">
+                  <span className="text-[11px] font-bold text-amber-900 flex items-center gap-1">
+                    Detail Integrasi Otomatis:
+                  </span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {detectedBreakdown.map((duty, idx) => (
+                      <span
+                        key={idx}
+                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold bg-white text-slate-800 border border-amber-300 shadow-2xs"
+                      >
+                        {duty.type === 'duta' ? (
+                          <Flag className="w-3 h-3 text-rose-500" />
+                        ) : (
+                          <Trophy className="w-3 h-3 text-emerald-600" />
+                        )}
+                        <span>{duty.dutyLabel}</span>
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Terdaftar Sejak */}
           <div className="py-2.5 flex items-center justify-between text-[11px]">
             <span className="text-slate-400 flex items-center gap-1.5">
-              <Calendar className="w-3.5 h-3.5 text-slate-400" /> Tanggal Input
+              <Calendar className="w-3.5 h-3.5 text-slate-400" /> Tanggal Input Data
             </span>
             <span className="text-slate-500 font-mono">
               {new Date(teacher.createdAt).toLocaleDateString('id-ID', {
@@ -162,7 +189,9 @@ export const TeacherDetailModal: React.FC<TeacherDetailModalProps> = ({
           )}
           <button
             onClick={onClose}
-            className="px-4 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs transition-colors"
+            className={`px-4 py-2 rounded-xl text-white font-bold text-xs transition-colors ${
+              isExternal ? 'bg-purple-700 hover:bg-purple-800' : 'bg-emerald-700 hover:bg-emerald-800'
+            }`}
           >
             Tutup
           </button>

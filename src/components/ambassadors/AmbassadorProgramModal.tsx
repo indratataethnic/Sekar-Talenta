@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Modal } from '../common/Modal';
 import { AmbassadorType, AmbassadorProgram } from '../../types';
 import { useData } from '../../context/DataContext';
@@ -18,16 +18,28 @@ export const AmbassadorProgramModal: React.FC<AmbassadorProgramModalProps> = ({
 }) => {
   const { addAmbassadorProgram, updateAmbassadorProgram, schoolProfile } = useData();
 
-  const [title, setTitle] = useState(programToEdit?.title || '');
-  const [description, setDescription] = useState(programToEdit?.description || '');
-  const [targetAudience, setTargetAudience] = useState(
-    programToEdit?.targetAudience || 'Seluruh Murid Kelas 1-6 SDN Karanganyar'
-  );
-  const [period, setPeriod] = useState(programToEdit?.period || `Semester ${schoolProfile.currentSemester} ${schoolProfile.currentAcademicYear}`);
-  const [status, setStatus] = useState<'perencanaan' | 'berjalan' | 'selesai' | 'dibatalkan'>(
-    programToEdit?.status || 'berjalan'
-  );
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [targetAudience, setTargetAudience] = useState('Seluruh Murid Kelas 1-6 SDN Karanganyar');
+  const [period, setPeriod] = useState(`Semester ${schoolProfile.currentSemester} ${schoolProfile.currentAcademicYear}`);
+  const [status, setStatus] = useState<'perencanaan' | 'berjalan' | 'selesai' | 'dibatalkan'>('berjalan');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (programToEdit) {
+      setTitle(programToEdit.title);
+      setDescription(programToEdit.description || '');
+      setTargetAudience(programToEdit.targetAudience || 'Seluruh Murid Kelas 1-6 SDN Karanganyar');
+      setPeriod(programToEdit.period || `Semester ${schoolProfile.currentSemester} ${schoolProfile.currentAcademicYear}`);
+      setStatus(programToEdit.status || 'berjalan');
+    } else {
+      setTitle('');
+      setDescription('');
+      setTargetAudience('Seluruh Murid Kelas 1-6 SDN Karanganyar');
+      setPeriod(`Semester ${schoolProfile.currentSemester} ${schoolProfile.currentAcademicYear}`);
+      setStatus('berjalan');
+    }
+  }, [programToEdit, isOpen, schoolProfile.currentSemester, schoolProfile.currentAcademicYear]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

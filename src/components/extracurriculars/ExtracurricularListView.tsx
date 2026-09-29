@@ -6,31 +6,40 @@ import {
   Clock,
   MapPin,
   Users,
-  Sparkles
+  Sparkles,
+  Edit2,
+  Trash2
 } from 'lucide-react';
 import { Extracurricular } from '../../types';
 import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
 import { Card } from '../common/Card';
 import { Badge } from '../common/Badge';
+import { ConfirmDialog } from '../common/ConfirmDialog';
 import { ExtracurricularDetailView } from './ExtracurricularDetailView';
 import { ExtracurricularFormModal } from './ExtracurricularFormModal';
 
 export const ExtracurricularListView: React.FC = () => {
-  const { extracurriculars, extracurricularMembers } = useData();
-  const { canManageExtracurriculars } = useAuth();
+  const { extracurriculars, extracurricularMembers, deleteExtracurricular } = useData();
+  const { canManageExtracurriculars, isMurid } = useAuth();
+  const canManage = !isMurid;
 
   const [selectedEkskul, setSelectedEkskul] = useState<Extracurricular | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingEkskul, setEditingEkskul] = useState<Extracurricular | null>(null);
+  const [deletingEkskul, setDeletingEkskul] = useState<Extracurricular | null>(null);
 
-  if (selectedEkskul) {
+  const currentEkskul = selectedEkskul
+    ? extracurriculars.find((e) => e.id === selectedEkskul.id) || selectedEkskul
+    : null;
+
+  if (currentEkskul) {
     return (
       <ExtracurricularDetailView
-        extracurricular={selectedEkskul}
+        extracurricular={currentEkskul}
         onBack={() => setSelectedEkskul(null)}
         onEdit={() => {
-          setEditingEkskul(selectedEkskul);
+          setEditingEkskul(currentEkskul);
           setIsFormOpen(true);
         }}
       />
@@ -138,9 +147,38 @@ export const ExtracurricularListView: React.FC = () => {
                   <span className="font-semibold text-slate-700">{ekskul.coachName}</span>
                 </div>
 
-                <span className="inline-flex items-center gap-1 font-bold text-emerald-700 group-hover:translate-x-1 transition-transform">
-                  Detail <ArrowRight className="w-3.5 h-3.5" />
-                </span>
+                <div className="flex items-center gap-1.5">
+                  {canManage && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setEditingEkskul(ekskul);
+                          setIsFormOpen(true);
+                        }}
+                        className="text-xs font-bold text-slate-600 hover:text-emerald-700 flex items-center gap-1 px-2 py-1 rounded-lg hover:bg-slate-100 transition-colors"
+                        title="Edit Data Ekstrakurikuler"
+                      >
+                        <Edit2 className="w-3.5 h-3.5" /> Edit
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setDeletingEkskul(ekskul);
+                        }}
+                        className="text-xs font-bold text-rose-600 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 flex items-center gap-1 px-2 py-1 rounded-lg border border-rose-200 transition-colors shadow-2xs"
+                        title="Hapus Ekstrakurikuler"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" /> Hapus
+                      </button>
+                    </>
+                  )}
+                  <span className="inline-flex items-center gap-1 font-bold text-emerald-700 group-hover:translate-x-1 transition-transform ml-1">
+                    Detail <ArrowRight className="w-3.5 h-3.5" />
+                  </span>
+                </div>
               </div>
             </Card>
           );
@@ -154,6 +192,21 @@ export const ExtracurricularListView: React.FC = () => {
           setEditingEkskul(null);
         }}
         ekskulToEdit={editingEkskul}
+      />
+
+      <ConfirmDialog
+        isOpen={!!deletingEkskul}
+        onClose={() => setDeletingEkskul(null)}
+        onConfirm={async () => {
+          if (deletingEkskul) {
+            await deleteExtracurricular(deletingEkskul.id);
+            setDeletingEkskul(null);
+          }
+        }}
+        title="Hapus Ekstrakurikuler?"
+        message={`Apakah Anda yakin ingin menghapus kegiatan ekstrakurikuler "${deletingEkskul?.name}"? Seluruh pendaftaran peserta terkait juga akan dibersihkan.`}
+        type="danger"
+        confirmText="Hapus Ekstrakurikuler"
       />
     </div>
   );

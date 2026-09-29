@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Modal } from '../common/Modal';
-import { AmbassadorMember, AmbassadorType } from '../../types';
+import { AmbassadorMember, AmbassadorType, Student } from '../../types';
 import { useData } from '../../context/DataContext';
+import { StudentSelector } from '../common/StudentSelector';
 
 interface AmbassadorMemberModalProps {
   isOpen: boolean;
@@ -18,17 +19,32 @@ export const AmbassadorMemberModal: React.FC<AmbassadorMemberModalProps> = ({
 }) => {
   const { students, addAmbassadorMember, updateAmbassadorMember, schoolProfile } = useData();
 
-  const [selectedStudentId, setSelectedStudentId] = useState(memberToEdit?.studentId || students[0]?.id || '');
-  const [roleTitle, setRoleTitle] = useState(memberToEdit?.roleTitle || 'Anggota Tim Duta');
-  const [assignedYear, setAssignedYear] = useState(memberToEdit?.assignedYear || schoolProfile.currentAcademicYear);
-  const [reflectionNotes, setReflectionNotes] = useState(memberToEdit?.reflectionNotes || '');
-  const [status, setStatus] = useState<'aktif' | 'selesai' | 'alumni'>(memberToEdit?.status || 'aktif');
+  const [selectedStudentId, setSelectedStudentId] = useState('');
+  const [roleTitle, setRoleTitle] = useState('Anggota Tim Duta');
+  const [assignedYear, setAssignedYear] = useState(schoolProfile.currentAcademicYear);
+  const [reflectionNotes, setReflectionNotes] = useState('');
+  const [status, setStatus] = useState<'aktif' | 'selesai' | 'alumni'>('aktif');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Synchronize state on modal open or memberToEdit changes
+  useEffect(() => {
+    if (memberToEdit) {
+      setSelectedStudentId(memberToEdit.studentId);
+      setRoleTitle(memberToEdit.roleTitle || 'Anggota Tim Duta');
+      setAssignedYear(memberToEdit.assignedYear || schoolProfile.currentAcademicYear);
+      setReflectionNotes(memberToEdit.reflectionNotes || '');
+      setStatus(memberToEdit.status || 'aktif');
+    } else {
+      setSelectedStudentId(students[0]?.id || '');
+      setRoleTitle('Anggota Tim Duta');
+      setAssignedYear(schoolProfile.currentAcademicYear);
+      setReflectionNotes('');
+      setStatus('aktif');
+    }
+  }, [memberToEdit, isOpen, students, schoolProfile.currentAcademicYear]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const student = students.find((s) => s.id === selectedStudentId);
-    if (!student) return;
 
     setIsSubmitting(true);
     try {
@@ -40,6 +56,12 @@ export const AmbassadorMemberModal: React.FC<AmbassadorMemberModalProps> = ({
           status
         });
       } else {
+        const student = students.find((s) => s.id === selectedStudentId);
+        if (!student) {
+          alert('Silakan pilih murid terlebih dahulu.');
+          setIsSubmitting(false);
+          return;
+        }
         await addAmbassadorMember({
           studentId: student.id,
           studentName: student.fullName,
@@ -73,26 +95,16 @@ export const AmbassadorMemberModal: React.FC<AmbassadorMemberModalProps> = ({
     >
       <form onSubmit={handleSubmit} className="space-y-4">
         {!memberToEdit ? (
-          <div>
-            <label className="block text-xs font-bold text-slate-700 mb-1">
-              Pilih Murid *
-            </label>
-            <select
-              value={selectedStudentId}
-              onChange={(e) => setSelectedStudentId(e.target.value)}
-              className="w-full px-3 py-2 text-xs font-medium rounded-xl border border-slate-300 focus:outline-emerald-600"
-            >
-              {students.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.fullName} ({s.classId} - NISN: {s.nisn})
-                </option>
-              ))}
-            </select>
-          </div>
+          <StudentSelector
+            selectedStudentId={selectedStudentId}
+            onSelectStudent={(st: Student) => setSelectedStudentId(st.id)}
+            label="Pilih Murid (Cari Berdasarkan Kelas / Nama)"
+            required
+          />
         ) : (
-          <div className="p-3 bg-slate-50 rounded-xl">
+          <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
             <p className="text-xs font-bold text-slate-800">{memberToEdit.studentName}</p>
-            <p className="text-[11px] text-slate-500">{memberToEdit.classId}</p>
+            <p className="text-[11px] text-slate-500">{memberToEdit.classId} • NIS: {memberToEdit.studentNis}</p>
           </div>
         )}
 

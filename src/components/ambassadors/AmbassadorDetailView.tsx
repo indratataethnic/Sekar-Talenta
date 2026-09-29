@@ -43,11 +43,12 @@ export const AmbassadorDetailView: React.FC<AmbassadorDetailViewProps> = ({
     ambassadorPrograms,
     activities,
     removeAmbassadorMember,
-    deleteAmbassadorProgram
+    deleteAmbassadorProgram,
+    deleteAmbassadorType
   } = useData();
 
-  const { canManageAmbassadorType, isSuperAdmin } = useAuth();
-  const canManageThisAmbassador = isSuperAdmin || canManageAmbassadorType(ambassadorType.id) || canManageAmbassadorType(ambassadorType.code);
+  const { isMurid } = useAuth();
+  const canManageThisAmbassador = !isMurid;
 
   const [activeTab, setActiveTab] = useState<'guidelines' | 'members' | 'programs' | 'activities'>('members');
   const [isMemberModalOpen, setIsMemberModalOpen] = useState(false);
@@ -57,6 +58,7 @@ export const AmbassadorDetailView: React.FC<AmbassadorDetailViewProps> = ({
 
   const [deletingMemberId, setDeletingMemberId] = useState<string | null>(null);
   const [deletingProgramId, setDeletingProgramId] = useState<string | null>(null);
+  const [isDeletingThisAmbassador, setIsDeletingThisAmbassador] = useState(false);
 
   const myMembers = ambassadorMembers.filter((m) => m.ambassadorTypeId === ambassadorType.id);
   const myPrograms = ambassadorPrograms.filter((p) => p.ambassadorTypeId === ambassadorType.id);
@@ -92,14 +94,26 @@ export const AmbassadorDetailView: React.FC<AmbassadorDetailViewProps> = ({
           <ArrowLeft className="w-4 h-4" /> Kembali ke Daftar Duta
         </button>
 
-        {canManageThisAmbassador && onEdit && (
-          <button
-            onClick={onEdit}
-            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold shadow-xs active:scale-95 transition-all"
-          >
-            <Edit2 className="w-3.5 h-3.5" /> Edit Data Bidang Duta
-          </button>
-        )}
+        <div className="flex items-center gap-2">
+          {canManageThisAmbassador && onEdit && (
+            <button
+              onClick={onEdit}
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold shadow-xs active:scale-95 transition-all"
+            >
+              <Edit2 className="w-3.5 h-3.5" /> Edit Data Bidang Duta
+            </button>
+          )}
+
+          {canManageThisAmbassador && (
+            <button
+              onClick={() => setIsDeletingThisAmbassador(true)}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-bold shadow-2xs active:scale-95 transition-all"
+              title="Hapus Bidang Duta ini"
+            >
+              <Trash2 className="w-3.5 h-3.5 text-rose-600" /> Hapus Bidang Duta
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Hero Banner */}
@@ -436,6 +450,20 @@ export const AmbassadorDetailView: React.FC<AmbassadorDetailViewProps> = ({
         message="Program kerja ini akan dihapus dari arsip Duta Sekolah."
         type="danger"
         confirmText="Hapus Program"
+      />
+
+      <ConfirmDialog
+        isOpen={isDeletingThisAmbassador}
+        onClose={() => setIsDeletingThisAmbassador(false)}
+        onConfirm={async () => {
+          setIsDeletingThisAmbassador(false);
+          await deleteAmbassadorType(ambassadorType.id);
+          onBack();
+        }}
+        title="Hapus Bidang Duta Sekolah?"
+        message={`Apakah Anda yakin ingin menghapus bidang "${ambassadorType.name}"? Seluruh data penugasan kader murid dan program kerja terkait pada bidang ini juga akan dihapus secara permanen.`}
+        type="danger"
+        confirmText="Hapus Bidang Duta"
       />
     </div>
   );

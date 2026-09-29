@@ -32,7 +32,9 @@ import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
 import { Card } from '../common/Card';
 import { Badge } from '../common/Badge';
-import { InterestLevel, Student } from '../../types';
+import { StudentSelector } from '../common/StudentSelector';
+import { InterestLevel, Student, AmbassadorType } from '../../types';
+import { isClassMatching } from '../../utils/classUtils';
 
 export const TalentExplorationView: React.FC = () => {
   const {
@@ -93,6 +95,29 @@ export const TalentExplorationView: React.FC = () => {
   // Recommendation Quick Assign Feedback
   const [assignedNotice, setAssignedNotice] = useState<string | null>(null);
 
+  // Synchronize selection and class filter for Guru Kelas
+  React.useEffect(() => {
+    if (isGuruKelas && currentUser?.assignedClass) {
+      setMatrixClassFilter(currentUser.assignedClass);
+      const classKids = students.filter((s) => isClassMatching(s.classId, currentUser.assignedClass));
+      if (classKids.length > 0) {
+        if (!classKids.some((s) => s.id === selectedStudentId)) {
+          setSelectedStudentId(classKids[0].id);
+        }
+        if (!classKids.some((s) => s.id === obsStudentId)) {
+          setObsStudentId(classKids[0].id);
+        }
+      }
+    }
+  }, [isGuruKelas, currentUser?.assignedClass, students]);
+
+  const displayedObservations = useMemo(() => {
+    if (isGuruKelas && currentUser?.assignedClass) {
+      return teacherObservations.filter((obs) => isClassMatching(obs.classId, currentUser.assignedClass));
+    }
+    return teacherObservations;
+  }, [teacherObservations, isGuruKelas, currentUser?.assignedClass]);
+
   const activeCategoryObj = talentCategories.find((c) => c.id === selectedCategory) || talentCategories[0];
   const currentStudentObj = students.find((s) => s.id === selectedStudentId);
 
@@ -130,7 +155,7 @@ export const TalentExplorationView: React.FC = () => {
 
   const handleSaveInterest = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!currentStudentObj) return;
+    if (isMurid || !currentStudentObj) return;
 
     const sub = selectedSubcategory || activeCategoryObj.subcategories[0] || activeCategoryObj.name;
 
@@ -184,42 +209,181 @@ export const TalentExplorationView: React.FC = () => {
     }
   };
 
-  // Smart Matching Recommendation Logic
+  // Smart Matching Recommendation Logic dynamically aligned with actual available Ambassador Types & Extracurriculars
   const getSmartRecommendationsForInterest = (catId: string, subcategory: string) => {
-    const recDutas: string[] = [];
-    const recEkskuls: string[] = [];
+    const lowerSub = (subcategory || '').toLowerCase();
+    const lowerCat = (catId || '').toLowerCase();
 
-    const lowerSub = subcategory.toLowerCase();
-    const lowerCat = catId.toLowerCase();
+    // Helper to find ambassador dynamically from current available ambassadorTypes in school
+    const findAmbassador = (keywords: string[]): AmbassadorType | undefined => {
+      return ambassadorTypes.find((t) => {
+        if (t.isActive === false) return false;
+        const code = (t.code || '').toLowerCase();
+        const id = (t.id || '').toLowerCase();
+        const name = (t.name || '').toLowerCase();
+        const shortName = (t.shortName || '').toLowerCase();
+        const focus = (t.focus || '').toLowerCase();
+        return keywords.some(
+          (kw) =>
+            code.includes(kw) ||
+            id.includes(kw) ||
+            name.includes(kw) ||
+            shortName.includes(kw) ||
+            focus.includes(kw)
+        );
+      });
+    };
 
-    if (lowerSub.includes('tari') || lowerSub.includes('musik') || lowerSub.includes('batik') || lowerCat.includes('seni')) {
-      recDutas.push('Duta Sahabat & Harmoni');
-      recEkskuls.push('Seni Tari Tradisional', 'Membatik Karanganyar');
-    }
-    if (lowerSub.includes('sepak') || lowerSub.includes('futsal') || lowerSub.includes('lari') || lowerSub.includes('voli') || lowerCat.includes('olahraga')) {
-      recDutas.push('Duta Kesehatan & Kebugaran');
-      recEkskuls.push('Futsal & Olahraga Ketangkasan');
-    }
-    if (lowerSub.includes('komputer') || lowerSub.includes('scratch') || lowerSub.includes('coding') || lowerSub.includes('canva') || lowerCat.includes('teknologi')) {
-      recDutas.push('Duta Digital & Media Edukasi');
-      recEkskuls.push('Robotik & Coding Sederhana');
-    }
-    if (lowerSub.includes('baca') || lowerSub.includes('cerita') || lowerSub.includes('pidato') || lowerCat.includes('literasi')) {
-      recDutas.push('Duta Literasi & Mading');
-      recEkskuls.push('Jurnalistik Cilik & Sastra');
-    }
-    if (lowerSub.includes('lingkungan') || lowerSub.includes('kebersihan') || lowerSub.includes('tanaman')) {
-      recDutas.push('Duta Lingkungan & Adiwiyata');
-      recEkskuls.push('Pramuka Siaga & Penggalang');
-    }
-    if (lowerSub.includes('tahfidz') || lowerSub.includes('agama') || lowerSub.includes('spiritual')) {
-      recDutas.push('Duta Sahabat & Harmoni');
-      recEkskuls.push('Tahfidz Al-Qur\'an & Tilawah');
-    }
-    if (recDutas.length === 0) recDutas.push('Duta TPPK & Anti Perundungan');
-    if (recEkskuls.length === 0) recEkskuls.push('Pramuka Siaga & Penggalang');
+    // Helper to find extracurricular dynamically from available extracurriculars
+    const findEkskuls = (keywords: string[]): string[] => {
+      return extracurriculars
+        .filter((e) => {
+          if (e.isActive === false) return false;
+          const name = (e.name || '').toLowerCase();
+          const category = (e.category || '').toLowerCase();
+          const desc = (e.description || '').toLowerCase();
+          return keywords.some((kw) => name.includes(kw) || category.includes(kw) || desc.includes(kw));
+        })
+        .map((e) => e.name);
+    };
 
-    return { recDutas, recEkskuls };
+    const matchedAmbassadors: AmbassadorType[] = [];
+    const matchedEkskuls: string[] = [];
+
+    // 1. Seni, Tari, Musik, Menggambar, Batik, Teater
+    if (
+      lowerSub.includes('tari') ||
+      lowerSub.includes('musik') ||
+      lowerSub.includes('batik') ||
+      lowerSub.includes('gambar') ||
+      lowerSub.includes('lukis') ||
+      lowerSub.includes('seni') ||
+      lowerCat.includes('seni')
+    ) {
+      const duta = findAmbassador(['sahabat', 'inklusi', 'literasi']) || findAmbassador(['tppk']);
+      if (duta) matchedAmbassadors.push(duta);
+      matchedEkskuls.push(...findEkskuls(['tari', 'batik', 'seni']));
+    }
+
+    // 2. Olahraga, Futsal, Atletik, Voli, Kebugaran, Beladiri
+    if (
+      lowerSub.includes('sepak') ||
+      lowerSub.includes('futsal') ||
+      lowerSub.includes('lari') ||
+      lowerSub.includes('atletik') ||
+      lowerSub.includes('voli') ||
+      lowerSub.includes('senam') ||
+      lowerSub.includes('olahraga') ||
+      lowerCat.includes('olahraga')
+    ) {
+      const duta = findAmbassador(['kesehatan', 'uks', 'sehat', 'dokter']);
+      if (duta) matchedAmbassadors.push(duta);
+      matchedEkskuls.push(...findEkskuls(['futsal', 'olahraga', 'atletik', 'kebugaran', 'dokter', 'uks']));
+    }
+
+    // 3. Teknologi, Coding, Komputer, Scratch, Robotik, Desain Grafis, Media
+    if (
+      lowerSub.includes('komputer') ||
+      lowerSub.includes('scratch') ||
+      lowerSub.includes('coding') ||
+      lowerSub.includes('canva') ||
+      lowerSub.includes('robotik') ||
+      lowerSub.includes('digital') ||
+      lowerSub.includes('tik') ||
+      lowerCat.includes('teknologi')
+    ) {
+      const duta = findAmbassador(['digital', 'media', 'komputer']);
+      if (duta) matchedAmbassadors.push(duta);
+      matchedEkskuls.push(...findEkskuls(['robotik', 'coding', 'komputer', 'digital']));
+    }
+
+    // 4. Literasi, Buku, Membaca, Menulis, Puisi, Cerita, Dongeng, Bahasa
+    if (
+      lowerSub.includes('baca') ||
+      lowerSub.includes('cerita') ||
+      lowerSub.includes('pidato') ||
+      lowerSub.includes('puisi') ||
+      lowerSub.includes('buku') ||
+      lowerSub.includes('sastra') ||
+      lowerSub.includes('mading') ||
+      lowerCat.includes('literasi') ||
+      lowerCat.includes('bahasa')
+    ) {
+      const duta = findAmbassador(['literasi', 'baca', 'perpustakaan']);
+      if (duta) matchedAmbassadors.push(duta);
+      matchedEkskuls.push(...findEkskuls(['jurnalistik', 'sastra', 'bahasa', 'pramuka']));
+    }
+
+    // 5. Lingkungan, Kebersihan, Adiwiyata, Tanaman, Alam, Sampah
+    if (
+      lowerSub.includes('lingkungan') ||
+      lowerSub.includes('kebersihan') ||
+      lowerSub.includes('tanaman') ||
+      lowerSub.includes('sampah') ||
+      lowerSub.includes('adiwiyata') ||
+      lowerSub.includes('alam') ||
+      lowerCat.includes('lingkungan')
+    ) {
+      const duta = findAmbassador(['lingkungan', 'adiwiyata', 'kebersihan']);
+      if (duta) matchedAmbassadors.push(duta);
+      matchedEkskuls.push(...findEkskuls(['pramuka', 'lingkungan', 'adiwiyata']));
+    }
+
+    // 6. Keagamaan, Tahfidz, Spiritual, Doa, Ibadah
+    if (
+      lowerSub.includes('tahfidz') ||
+      lowerSub.includes('agama') ||
+      lowerSub.includes('spiritual') ||
+      lowerSub.includes('qur\'an') ||
+      lowerSub.includes('tilawah') ||
+      lowerSub.includes('islam') ||
+      lowerCat.includes('agama')
+    ) {
+      const duta = findAmbassador(['sahabat', 'inklusi', 'tppk']);
+      if (duta) matchedAmbassadors.push(duta);
+      matchedEkskuls.push(...findEkskuls(['tahfidz', 'tilawah', 'qur\'an', 'keagamaan']));
+    }
+
+    // 7. Karakter, Persahabatan, Kepedulian, Inklusi, Empati, Anti Bullying
+    if (
+      lowerSub.includes('teman') ||
+      lowerSub.includes('sahabat') ||
+      lowerSub.includes('sosial') ||
+      lowerSub.includes('empati') ||
+      lowerSub.includes('ramah') ||
+      lowerSub.includes('peduli') ||
+      lowerSub.includes('tppk') ||
+      lowerSub.includes('karakter') ||
+      lowerCat.includes('sosial') ||
+      lowerCat.includes('karakter')
+    ) {
+      const duta = findAmbassador(['sahabat', 'inklusi']) || findAmbassador(['tppk']);
+      if (duta) matchedAmbassadors.push(duta);
+      matchedEkskuls.push(...findEkskuls(['pramuka']));
+    }
+
+    // Fallbacks if empty: always use an actual available ambassador in the school
+    if (matchedAmbassadors.length === 0 && ambassadorTypes.length > 0) {
+      const defaultDuta = findAmbassador(['tppk']) || ambassadorTypes[0];
+      if (defaultDuta) matchedAmbassadors.push(defaultDuta);
+    }
+    if (matchedEkskuls.length === 0 && extracurriculars.length > 0) {
+      matchedEkskuls.push(extracurriculars[0].name);
+    }
+
+    // Guarantee unique items that exist in database
+    const uniqueAmbassadorMap = new Map<string, AmbassadorType>();
+    matchedAmbassadors.forEach((a) => {
+      if (a && a.id && !uniqueAmbassadorMap.has(a.id)) {
+        uniqueAmbassadorMap.set(a.id, a);
+      }
+    });
+
+    const recDutaObjects = Array.from(uniqueAmbassadorMap.values());
+    const recDutas = recDutaObjects.map((a) => a.name);
+    const recEkskuls = Array.from(new Set(matchedEkskuls)).filter(Boolean);
+
+    return { recDutas, recDutaObjects, recEkskuls };
   };
 
   // Filtered Interests for Matrix
@@ -248,8 +412,25 @@ export const TalentExplorationView: React.FC = () => {
   }, [classStudents, mappedStudentIdsInClass]);
 
   // Handle Quick Assign from Recommendation Tab
-  const handleQuickAssignAmbassador = async (student: Student, dutaName: string) => {
-    const ambType = ambassadorTypes.find((t) => t.name.toLowerCase().includes(dutaName.toLowerCase()) || dutaName.toLowerCase().includes(t.name.toLowerCase())) || ambassadorTypes[0];
+  const handleQuickAssignAmbassador = async (student: Student, dutaTarget: AmbassadorType | string) => {
+    let ambType: AmbassadorType | undefined;
+    if (typeof dutaTarget === 'object' && dutaTarget?.id) {
+      ambType = dutaTarget;
+    } else if (typeof dutaTarget === 'string') {
+      ambType = ambassadorTypes.find(
+        (t) =>
+          t.name.toLowerCase() === dutaTarget.toLowerCase() ||
+          t.shortName.toLowerCase() === dutaTarget.toLowerCase() ||
+          t.name.toLowerCase().includes(dutaTarget.toLowerCase()) ||
+          dutaTarget.toLowerCase().includes(t.name.toLowerCase()) ||
+          t.code.toLowerCase().includes(dutaTarget.toLowerCase())
+      );
+    }
+    if (!ambType && ambassadorTypes.length > 0) {
+      ambType = ambassadorTypes[0];
+    }
+    if (!ambType) return;
+
     await addAmbassadorMember({
       studentId: student.id,
       studentName: student.fullName,
@@ -258,7 +439,7 @@ export const TalentExplorationView: React.FC = () => {
       ambassadorTypeId: ambType.id,
       ambassadorTypeCode: ambType.code,
       ambassadorTypeName: ambType.name,
-      assignedYear: student.academicYear,
+      assignedYear: student.academicYear || schoolProfile.currentAcademicYear,
       startDate: new Date().toISOString().split('T')[0],
       coachName: ambType.coachName,
       status: 'aktif',
@@ -400,165 +581,273 @@ export const TalentExplorationView: React.FC = () => {
             </div>
           </div>
 
-          {/* Right Column: Interactive Explorer Form */}
+          {/* Right Column: Interactive Explorer (Read-Only for Murid/Ortu vs Entry Form for Teachers/Admins) */}
           <div className="lg:col-span-8 space-y-6">
-            <Card className="p-6 space-y-5 border-emerald-200/80">
-              <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-                <div className="flex items-center gap-2.5">
-                  <div className="p-2.5 rounded-xl bg-emerald-100 text-emerald-800">
-                    {getCategoryIcon(activeCategoryObj.icon)}
+            {isMurid ? (
+              /* READ-ONLY CATALOGUE & EXPLORATION FOR MURID / ORTU */
+              <div className="space-y-5">
+                <Card className="p-6 space-y-5 border-emerald-200/80 bg-white shadow-xs">
+                  {/* Category Banner */}
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+                    <div className="flex items-center gap-3.5">
+                      <div className="p-3 rounded-2xl bg-emerald-100 text-emerald-800 shadow-2xs">
+                        {getCategoryIcon(activeCategoryObj.icon)}
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h3 className="text-lg font-black text-slate-900">{activeCategoryObj.name}</h3>
+                          <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                            Katalog Potensi
+                          </span>
+                        </div>
+                        <p className="text-xs text-slate-500 mt-0.5">{activeCategoryObj.description}</p>
+                      </div>
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="text-base font-black text-slate-900">{activeCategoryObj.name}</h3>
-                    <p className="text-xs text-slate-500">{activeCategoryObj.description}</p>
+
+                  {/* Subcategory Exploration Buttons */}
+                  <div className="space-y-2.5">
+                    <h4 className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                      <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                      Pilihan Cabang & Topik dalam Bidang Ini (Klik untuk melihat rekomendasi):
+                    </h4>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                      {activeCategoryObj.subcategories.map((sub) => {
+                        const isSelected = (selectedSubcategory || activeCategoryObj.subcategories[0]) === sub;
+                        return (
+                          <button
+                            type="button"
+                            key={sub}
+                            onClick={() => setSelectedSubcategory(sub)}
+                            className={`p-3.5 rounded-2xl text-left text-xs transition-all border ${
+                              isSelected
+                                ? 'bg-emerald-50 text-emerald-950 border-emerald-500 ring-2 ring-emerald-500/20 font-bold shadow-2xs'
+                                : 'bg-slate-50/70 hover:bg-emerald-50/40 text-slate-700 border-slate-200'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between">
+                              <span className="font-bold">{sub}</span>
+                              {isSelected ? (
+                                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                              ) : (
+                                <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
+                              )}
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Matched Opportunities at UPT SDN Karanganyar */}
+                  {(() => {
+                    const sub = selectedSubcategory || activeCategoryObj.subcategories[0] || '';
+                    const rec = getSmartRecommendationsForInterest(activeCategoryObj.id, sub);
+                    return (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+                        {/* Duta Card */}
+                        <div className="p-4 rounded-2xl bg-purple-50/80 border border-purple-200 space-y-2">
+                          <div className="flex items-center gap-1.5 text-xs font-bold text-purple-900">
+                            <Award className="w-4 h-4 text-purple-700" />
+                            Peluang Duta Sekolah Terkait:
+                          </div>
+                          <div className="space-y-1.5">
+                            {rec.recDutas.length > 0 ? (
+                              rec.recDutas.map((duta, idx) => (
+                                <div key={idx} className="p-2.5 rounded-xl bg-white border border-purple-200/80 text-xs font-bold text-purple-950 flex items-center gap-2 shadow-2xs">
+                                  <span className="w-2 h-2 rounded-full bg-purple-600 flex-shrink-0" />
+                                  <span>{duta}</span>
+                                </div>
+                              ))
+                            ) : (
+                              <p className="text-xs text-slate-500 italic">Terbuka untuk semua duta sekolah</p>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Ekskul Card */}
+                        <div className="p-4 rounded-2xl bg-blue-50/80 border border-blue-200 space-y-2">
+                          <div className="flex items-center gap-1.5 text-xs font-bold text-blue-900">
+                            <Layers className="w-4 h-4 text-blue-700" />
+                            Ekstrakurikuler Pilihan Terkait:
+                          </div>
+                          <div className="space-y-1.5">
+                            {rec.recEkskuls.length > 0 ? (
+                              rec.recEkskuls.map((ekskul, idx) => (
+                                <div key={idx} className="p-2.5 rounded-xl bg-white border border-blue-200/80 text-xs font-bold text-blue-950 flex items-center gap-2 shadow-2xs">
+                                  <span className="w-2 h-2 rounded-full bg-blue-600 flex-shrink-0" />
+                                  <span>{ekskul}</span>
+                                </div>
+                              ))
+                            ) : (
+                              <p className="text-xs text-slate-500 italic">Ekstrakurikuler pengayaan bakat</p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })()}
+
+                  {/* Educational Guidance for Students & Parents */}
+                  <div className="p-4 rounded-2xl bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 text-xs space-y-1.5">
+                    <div className="flex items-center gap-2 text-emerald-950 font-bold">
+                      <Lightbulb className="w-4 h-4 text-amber-500 flex-shrink-0" />
+                      <span>Informasi Penyaluran Minat Murid:</span>
+                    </div>
+                    <p className="text-[11px] text-slate-600 leading-relaxed">
+                      Eksplorasi minat murid di UPT SDN Karanganyar dipetakan secara terpadu oleh Wali Kelas dan Pembina melalui pengamatan pembelajaran dan kegiatan ekstrakurikuler. Orang tua dan murid dapat berdiskusi dengan Wali Kelas terkait kegiatan yang paling diminati ananda.
+                    </p>
+                  </div>
+                </Card>
+              </div>
+            ) : (
+              /* TEACHER & ADMIN DATA ENTRY FORM */
+              <Card className="p-6 space-y-5 border-emerald-200/80">
+                <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                  <div className="flex items-center gap-2.5">
+                    <div className="p-2.5 rounded-xl bg-emerald-100 text-emerald-800">
+                      {getCategoryIcon(activeCategoryObj.icon)}
+                    </div>
+                    <div>
+                      <h3 className="text-base font-black text-slate-900">{activeCategoryObj.name}</h3>
+                      <p className="text-xs text-slate-500">{activeCategoryObj.description}</p>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              <form onSubmit={handleSaveInterest} className="space-y-5">
-                {/* Murid Selector */}
-                {!isMurid && (
+                <form onSubmit={handleSaveInterest} className="space-y-5">
+                  {/* Murid Selector with Class Filter & Search */}
+                  <StudentSelector
+                    selectedStudentId={selectedStudentId}
+                    onSelectStudent={(st: Student) => setSelectedStudentId(st.id)}
+                    label="Pilih Murid yang Melakukan Eksplorasi (Cari Berdasarkan Kelas / Nama)"
+                    required
+                  />
+
+                  {/* Subcategory choices */}
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-2">
+                      Aktivitas atau Topik yang Paling Ingin Dipelajari:
+                    </label>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {activeCategoryObj.subcategories.map((sub) => {
+                        const isSelected = selectedSubcategory === sub;
+                        return (
+                          <button
+                            type="button"
+                            key={sub}
+                            onClick={() => setSelectedSubcategory(sub)}
+                            className={`p-3 rounded-xl text-left text-xs font-semibold border transition-all ${
+                              isSelected
+                                ? 'bg-emerald-50 text-emerald-950 border-emerald-500 ring-2 ring-emerald-500/20 shadow-2xs font-bold'
+                                : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between">
+                              <span>{sub}</span>
+                              {isSelected && <CheckCircle2 className="w-4 h-4 text-emerald-600" />}
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Level of Interest */}
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-2">
+                      Tingkat Antusiasme Murid:
+                    </label>
+                    <div className="grid grid-cols-3 gap-3">
+                      <button
+                        type="button"
+                        onClick={() => setInterestLevel('sangat_tertarik')}
+                        className={`p-3 rounded-xl text-center text-xs font-bold border transition-all ${
+                          interestLevel === 'sangat_tertarik'
+                            ? 'bg-amber-50 text-amber-900 border-amber-500 ring-2 ring-amber-500/20'
+                            : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                        }`}
+                      >
+                        ⭐ Sangat Tertarik
+                        <p className="text-[10px] font-normal text-slate-400 mt-0.5">Ingin berlatih rutin & tekun</p>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setInterestLevel('tertarik')}
+                        className={`p-3 rounded-xl text-center text-xs font-bold border transition-all ${
+                          interestLevel === 'tertarik'
+                            ? 'bg-blue-50 text-blue-900 border-blue-500 ring-2 ring-blue-500/20'
+                            : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                        }`}
+                      >
+                        👍 Tertarik
+                        <p className="text-[10px] font-normal text-slate-400 mt-0.5">Senang saat berkegiatan</p>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setInterestLevel('ingin_mencoba')}
+                        className={`p-3 rounded-xl text-center text-xs font-bold border transition-all ${
+                          interestLevel === 'ingin_mencoba'
+                            ? 'bg-teal-50 text-teal-900 border-teal-500 ring-2 ring-teal-500/20'
+                            : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                        }`}
+                      >
+                        🌱 Ingin Mencoba
+                        <p className="text-[10px] font-normal text-slate-400 mt-0.5">Penasaran pengalaman baru</p>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Additional thoughts & dreams */}
                   <div>
                     <label className="block text-xs font-bold text-slate-700 mb-1">
-                      Pilih Murid yang Melakukan Eksplorasi:
+                      Cerita, Cita-cita, atau Harapan Murid (Opsional):
                     </label>
-                    <select
-                      value={selectedStudentId}
-                      onChange={(e) => setSelectedStudentId(e.target.value)}
-                      className="w-full px-3 py-2 text-xs font-medium rounded-xl border border-slate-300 focus:outline-emerald-600 bg-slate-50/50"
-                    >
-                      {students.map((s) => (
-                        <option key={s.id} value={s.id}>
-                          {s.fullName} ({s.classId} - NISN: {s.nisn})
-                        </option>
-                      ))}
-                    </select>
+                    <textarea
+                      rows={2}
+                      value={customNotes}
+                      onChange={(e) => setCustomNotes(e.target.value)}
+                      placeholder="Contoh: Saya ingin bisa membuat game Scratch sendiri atau tampil menari saat purnawiyata..."
+                      className="w-full text-xs p-3 rounded-xl border border-slate-300 focus:outline-emerald-600"
+                    />
                   </div>
-                )}
 
-                {/* Subcategory choices */}
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-2">
-                    Aktivitas atau Topik yang Paling Ingin Dipelajari:
-                  </label>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    {activeCategoryObj.subcategories.map((sub) => {
-                      const isSelected = selectedSubcategory === sub;
-                      return (
-                        <button
-                          type="button"
-                          key={sub}
-                          onClick={() => setSelectedSubcategory(sub)}
-                          className={`p-3 rounded-xl text-left text-xs font-semibold border transition-all ${
-                            isSelected
-                              ? 'bg-emerald-50 text-emerald-950 border-emerald-500 ring-2 ring-emerald-500/20 shadow-2xs font-bold'
-                              : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
-                          }`}
-                        >
-                          <div className="flex items-center justify-between">
-                            <span>{sub}</span>
-                            {isSelected && <CheckCircle2 className="w-4 h-4 text-emerald-600" />}
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* Level of Interest */}
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-2">
-                    Tingkat Antusiasme Murid:
-                  </label>
-                  <div className="grid grid-cols-3 gap-3">
-                    <button
-                      type="button"
-                      onClick={() => setInterestLevel('sangat_tertarik')}
-                      className={`p-3 rounded-xl text-center text-xs font-bold border transition-all ${
-                        interestLevel === 'sangat_tertarik'
-                          ? 'bg-amber-50 text-amber-900 border-amber-500 ring-2 ring-amber-500/20'
-                          : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
-                      }`}
-                    >
-                      ⭐ Sangat Tertarik
-                      <p className="text-[10px] font-normal text-slate-400 mt-0.5">Ingin berlatih rutin & tekun</p>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setInterestLevel('tertarik')}
-                      className={`p-3 rounded-xl text-center text-xs font-bold border transition-all ${
-                        interestLevel === 'tertarik'
-                          ? 'bg-blue-50 text-blue-900 border-blue-500 ring-2 ring-blue-500/20'
-                          : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
-                      }`}
-                    >
-                      👍 Tertarik
-                      <p className="text-[10px] font-normal text-slate-400 mt-0.5">Senang saat berkegiatan</p>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setInterestLevel('ingin_mencoba')}
-                      className={`p-3 rounded-xl text-center text-xs font-bold border transition-all ${
-                        interestLevel === 'ingin_mencoba'
-                          ? 'bg-teal-50 text-teal-900 border-teal-500 ring-2 ring-teal-500/20'
-                          : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
-                      }`}
-                    >
-                      🌱 Ingin Mencoba
-                      <p className="text-[10px] font-normal text-slate-400 mt-0.5">Penasaran pengalaman baru</p>
-                    </button>
-                  </div>
-                </div>
-
-                {/* Additional thoughts & dreams */}
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Cerita, Cita-cita, atau Harapan Murid (Opsional):
-                  </label>
-                  <textarea
-                    rows={2}
-                    value={customNotes}
-                    onChange={(e) => setCustomNotes(e.target.value)}
-                    placeholder="Contoh: Saya ingin bisa membuat game Scratch sendiri atau tampil menari saat purnawiyata..."
-                    className="w-full text-xs p-3 rounded-xl border border-slate-300 focus:outline-emerald-600"
-                  />
-                </div>
-
-                {/* Live Recommendation Hint */}
-                {(() => {
-                  const sub = selectedSubcategory || activeCategoryObj.subcategories[0] || '';
-                  const rec = getSmartRecommendationsForInterest(activeCategoryObj.id, sub);
-                  return (
-                    <div className="p-3.5 rounded-2xl bg-amber-50/70 border border-amber-200 text-amber-950 text-xs space-y-1">
-                      <div className="flex items-center gap-1.5 font-bold text-amber-900">
-                        <Lightbulb className="w-4 h-4 text-amber-600" />
-                        Penyaluran Terkait yang Disarankan:
+                  {/* Live Recommendation Hint */}
+                  {(() => {
+                    const sub = selectedSubcategory || activeCategoryObj.subcategories[0] || '';
+                    const rec = getSmartRecommendationsForInterest(activeCategoryObj.id, sub);
+                    return (
+                      <div className="p-3.5 rounded-2xl bg-amber-50/70 border border-amber-200 text-amber-950 text-xs space-y-1">
+                        <div className="flex items-center gap-1.5 font-bold text-amber-900">
+                          <Lightbulb className="w-4 h-4 text-amber-600" />
+                          Penyaluran Terkait yang Disarankan:
+                        </div>
+                        <p className="text-[11px] text-slate-600">
+                          🎖️ Duta Terkait: <strong>{rec.recDutas.join(', ')}</strong> • 🏸 Ekskul Terkait: <strong>{rec.recEkskuls.join(', ')}</strong>
+                        </p>
                       </div>
-                      <p className="text-[11px] text-slate-600">
-                        🎖️ Duta Terkait: <strong>{rec.recDutas.join(', ')}</strong> • 🏸 Ekskul Terkait: <strong>{rec.recEkskuls.join(', ')}</strong>
-                      </p>
+                    );
+                  })()}
+
+                  {isSavedNotice && (
+                    <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-300 text-emerald-800 text-xs font-bold flex items-center gap-2 animate-in fade-in">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                      Pilihan eksplorasi minat berhasil disimpan ke database rekam potensi murid!
                     </div>
-                  );
-                })()}
+                  )}
 
-                {isSavedNotice && (
-                  <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-300 text-emerald-800 text-xs font-bold flex items-center gap-2 animate-in fade-in">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                    Pilihan eksplorasi minat berhasil disimpan ke database rekam potensi murid!
-                  </div>
-                )}
+                  <button
+                    type="submit"
+                    className="w-full py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs sm:text-sm shadow-md transition-all active:scale-95"
+                  >
+                    Simpan Pilihan Eksplorasi Minat Murid Ini
+                  </button>
+                </form>
+              </Card>
+            )}
 
-                <button
-                  type="submit"
-                  className="w-full py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs sm:text-sm shadow-md transition-all active:scale-95"
-                >
-                  Simpan Pilihan Eksplorasi Minat Murid Ini
-                </button>
-              </form>
-            </Card>
-
-            {/* Current Student's Saved Interests History */}
-            {currentStudentObj && (
+            {/* Current Student's Saved Interests History (Only shown for Teachers/Admins or when viewing a selected student) */}
+            {!isMurid && currentStudentObj && (
               <Card className="p-4 space-y-3">
                 <h4 className="text-xs font-bold text-slate-900 flex items-center justify-between">
                   <span>Riwayat Pilihan Minat: {currentStudentObj.fullName}</span>
@@ -655,7 +944,7 @@ export const TalentExplorationView: React.FC = () => {
                   {unmappedStudentsInClass.length} murid di rombel ini belum mengisi kuesioner minat.
                 </p>
               </div>
-              {unmappedStudentsInClass.length > 0 && (
+              {unmappedStudentsInClass.length > 0 && !isMurid && (
                 <button
                   onClick={() => {
                     setSelectedStudentId(unmappedStudentsInClass[0].id);
@@ -757,7 +1046,7 @@ export const TalentExplorationView: React.FC = () => {
             ) : (
               filteredInterests.map((interest) => {
                 const targetStudent = students.find((s) => s.id === interest.studentId);
-                const { recDutas, recEkskuls } = getSmartRecommendationsForInterest(interest.categoryId, interest.subcategory);
+                const { recDutas, recDutaObjects, recEkskuls } = getSmartRecommendationsForInterest(interest.categoryId, interest.subcategory);
                 
                 const isAlreadyAmbassador = ambassadorMembers.some((m) => m.studentId === interest.studentId && m.status === 'aktif');
                 const isAlreadyEkskul = extracurricularMembers.some((m) => m.studentId === interest.studentId && m.status === 'aktif');
@@ -806,14 +1095,25 @@ export const TalentExplorationView: React.FC = () => {
                         <span className="font-bold text-purple-950 flex items-center gap-1">
                           <Award className="w-3.5 h-3.5 text-purple-700" /> Rekomendasi Duta Sekolah:
                         </span>
-                        <p className="text-[11px] text-purple-900 font-semibold">{recDutas[0]}</p>
-                        {targetStudent && !isAlreadyAmbassador && (
-                          <button
-                            onClick={() => handleQuickAssignAmbassador(targetStudent, recDutas[0])}
-                            className="px-2.5 py-1 rounded-lg bg-purple-700 hover:bg-purple-800 text-white font-bold text-[10px] shadow-2xs transition-all active:scale-95"
-                          >
-                            + Tugaskan Jadi Duta
-                          </button>
+                        {recDutaObjects && recDutaObjects.length > 0 ? (
+                          <div className="space-y-1.5">
+                            <div className="flex flex-wrap items-center gap-1.5">
+                              <Badge variant="purple" size="sm">
+                                {recDutaObjects[0].shortName}
+                              </Badge>
+                              <span className="text-[11px] text-purple-900 font-semibold">{recDutaObjects[0].name}</span>
+                            </div>
+                            {targetStudent && !isAlreadyAmbassador && !isMurid && (
+                              <button
+                                onClick={() => handleQuickAssignAmbassador(targetStudent, recDutaObjects[0])}
+                                className="px-2.5 py-1 rounded-lg bg-purple-700 hover:bg-purple-800 text-white font-bold text-[10px] shadow-2xs transition-all active:scale-95"
+                              >
+                                + Tugaskan Jadi {recDutaObjects[0].shortName}
+                              </button>
+                            )}
+                          </div>
+                        ) : (
+                          <p className="text-[11px] text-slate-500 italic">Belum ada rekomendasi Duta</p>
                         )}
                       </div>
 
@@ -823,7 +1123,7 @@ export const TalentExplorationView: React.FC = () => {
                           <Layers className="w-3.5 h-3.5 text-blue-700" /> Rekomendasi Ekstrakurikuler:
                         </span>
                         <p className="text-[11px] text-blue-900 font-semibold">{recEkskuls[0]}</p>
-                        {targetStudent && !isAlreadyEkskul && (
+                        {targetStudent && !isAlreadyEkskul && !isMurid && (
                           <button
                             onClick={() => handleQuickAssignEkskul(targetStudent, recEkskuls[0])}
                             className="px-2.5 py-1 rounded-lg bg-blue-700 hover:bg-blue-800 text-white font-bold text-[10px] shadow-2xs transition-all active:scale-95"
@@ -845,103 +1145,105 @@ export const TalentExplorationView: React.FC = () => {
       {activeTab === 'observations' && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           {/* Observation Form for Teachers */}
-          <div className="lg:col-span-5 space-y-4">
-            <Card className="p-5 border-emerald-200 bg-emerald-50/20 space-y-3">
-              <h3 className="text-sm font-bold text-emerald-950 flex items-center gap-1.5">
-                <HeartHandshake className="w-4 h-4 text-emerald-700" />
-                Input Catatan Pengamatan Guru
-              </h3>
-              <p className="text-xs text-slate-500">
-                Dokumentasikan apresiasi, ketekunan, dan potensi yang teramati selama kegiatan belajar.
-              </p>
+          {!isMurid && (
+            <div className="lg:col-span-5 space-y-4">
+              <Card className="p-5 border-emerald-200 bg-emerald-50/20 space-y-3">
+                <h3 className="text-sm font-bold text-emerald-950 flex items-center gap-1.5">
+                  <HeartHandshake className="w-4 h-4 text-emerald-700" />
+                  Input Catatan Pengamatan Guru
+                </h3>
+                <p className="text-xs text-slate-500">
+                  Dokumentasikan apresiasi, ketekunan, dan potensi yang teramati selama kegiatan belajar.
+                </p>
 
-              <form onSubmit={handleSaveObservation} className="space-y-3">
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Pilih Murid:
-                  </label>
-                  <select
-                    value={obsStudentId}
-                    onChange={(e) => setObsStudentId(e.target.value)}
-                    className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 focus:outline-emerald-600 bg-white font-medium"
-                  >
-                    {students.map((s) => (
-                      <option key={s.id} value={s.id}>
-                        {s.fullName} ({s.classId})
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Catatan Keterampilan & Interaksi Murid *:
-                  </label>
-                  <textarea
+                <form onSubmit={handleSaveObservation} className="space-y-3">
+                  <StudentSelector
+                    selectedStudentId={obsStudentId}
+                    onSelectStudent={(st: Student) => setObsStudentId(st.id)}
+                    label="Pilih Murid yang Diamati (Cari Berdasarkan Kelas / Nama)"
                     required
-                    rows={3}
-                    value={obsNotes}
-                    onChange={(e) => setObsNotes(e.target.value)}
-                    placeholder="Contoh: Menunjukkan ketertarikan tinggi saat praktik eksperimen IPA, teliti dalam mencatat..."
-                    className="w-full text-xs p-2.5 rounded-xl border border-slate-300 focus:outline-emerald-600 bg-white"
                   />
-                </div>
 
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Perkembangan Karakter & Sikap Sosial:
-                  </label>
-                  <input
-                    type="text"
-                    value={obsGrowth}
-                    onChange={(e) => setObsGrowth(e.target.value)}
-                    placeholder="Contoh: Suka menolong teman, percaya diri tampil di depan kelas"
-                    className="w-full text-xs px-3 py-2 rounded-xl border border-slate-300 focus:outline-emerald-600 bg-white"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Rekomendasi Wadah Bakat (pisahkan koma):
-                  </label>
-                  <input
-                    type="text"
-                    value={obsRecommendations}
-                    onChange={(e) => setObsRecommendations(e.target.value)}
-                    placeholder="Contoh: Duta Digital, Robotik & Coding, Membatik"
-                    className="w-full text-xs px-3 py-2 rounded-xl border border-slate-300 focus:outline-emerald-600 bg-white"
-                  />
-                </div>
-
-                {obsSuccessNotice && (
-                  <div className="p-2.5 rounded-xl bg-emerald-100 text-emerald-900 text-xs font-bold flex items-center gap-1.5">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-700" /> Catatan pengamatan guru berhasil disimpan!
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      Catatan Keterampilan & Interaksi Murid *:
+                    </label>
+                    <textarea
+                      required
+                      rows={3}
+                      value={obsNotes}
+                      onChange={(e) => setObsNotes(e.target.value)}
+                      placeholder="Contoh: Menunjukkan ketertarikan tinggi saat praktik eksperimen IPA, teliti dalam mencatat..."
+                      className="w-full text-xs p-2.5 rounded-xl border border-slate-300 focus:outline-emerald-600 bg-white"
+                    />
                   </div>
-                )}
 
-                <button
-                  type="submit"
-                  disabled={isSavingObs}
-                  className="w-full py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs shadow-xs transition-all active:scale-95 disabled:opacity-50"
-                >
-                  {isSavingObs ? 'Menyimpan...' : 'Simpan Catatan Pengamatan'}
-                </button>
-              </form>
-            </Card>
-          </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      Perkembangan Karakter & Sikap Sosial:
+                    </label>
+                    <input
+                      type="text"
+                      value={obsGrowth}
+                      onChange={(e) => setObsGrowth(e.target.value)}
+                      placeholder="Contoh: Suka menolong teman, percaya diri tampil di depan kelas"
+                      className="w-full text-xs px-3 py-2 rounded-xl border border-slate-300 focus:outline-emerald-600 bg-white"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      Rekomendasi Wadah Bakat (pisahkan koma):
+                    </label>
+                    <input
+                      type="text"
+                      value={obsRecommendations}
+                      onChange={(e) => setObsRecommendations(e.target.value)}
+                      placeholder="Contoh: Duta Digital, Robotik & Coding, Membatik"
+                      className="w-full text-xs px-3 py-2 rounded-xl border border-slate-300 focus:outline-emerald-600 bg-white"
+                    />
+                  </div>
+
+                  {obsSuccessNotice && (
+                    <div className="p-2.5 rounded-xl bg-emerald-100 text-emerald-900 text-xs font-bold flex items-center gap-1.5">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-700" /> Catatan pengamatan guru berhasil disimpan!
+                    </div>
+                  )}
+
+                  <button
+                    type="submit"
+                    disabled={isSavingObs}
+                    className="w-full py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs shadow-xs transition-all active:scale-95 disabled:opacity-50"
+                  >
+                    {isSavingObs ? 'Menyimpan...' : 'Simpan Catatan Pengamatan'}
+                  </button>
+                </form>
+              </Card>
+            </div>
+          )}
 
           {/* Observations List */}
-          <div className="lg:col-span-7 space-y-3">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 px-1">
-              Arsip Catatan Pengamatan Guru ({teacherObservations.length})
-            </h3>
-            {teacherObservations.length === 0 ? (
+          <div className={`${isMurid ? 'lg:col-span-12' : 'lg:col-span-7'} space-y-3`}>
+            <div className="flex items-center justify-between px-1">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                Arsip Catatan Pengamatan Guru ({displayedObservations.length})
+              </h3>
+              {isGuruKelas && currentUser?.assignedClass && (
+                <span className="text-[11px] font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-lg border border-emerald-200">
+                  Rombel {currentUser.assignedClass}
+                </span>
+              )}
+            </div>
+
+            {displayedObservations.length === 0 ? (
               <Card className="text-center py-10 text-slate-400 text-xs">
-                Belum ada arsip catatan pengamatan guru.
+                {isGuruKelas && currentUser?.assignedClass
+                  ? `Belum ada catatan pengamatan untuk murid di ${currentUser.assignedClass}.`
+                  : 'Belum ada arsip catatan pengamatan guru.'}
               </Card>
             ) : (
               <div className="space-y-3 max-h-[70vh] overflow-y-auto pr-1">
-                {teacherObservations.map((obs) => (
+                {displayedObservations.map((obs) => (
                   <Card key={obs.id} className="p-4 space-y-2 border-l-4 border-l-emerald-600">
                     <div className="flex items-center justify-between">
                       <div>

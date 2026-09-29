@@ -15,6 +15,7 @@ import {
   FileSpreadsheet
 } from 'lucide-react';
 import { useData } from '../../context/DataContext';
+import { useAuth } from '../../context/AuthContext';
 import { Card } from '../common/Card';
 import { Badge } from '../common/Badge';
 
@@ -36,9 +37,21 @@ export const ReportsView: React.FC = () => {
     achievements
   } = useData();
 
+  const { isGuruKelas, currentUser } = useAuth();
+
   // Filters
   const [selectedReportType, setSelectedReportType] = useState<string>('duta_members');
-  const [filterClass, setFilterClass] = useState<string>('ALL');
+  const [filterClass, setFilterClass] = useState<string>(() => {
+    if (isGuruKelas && currentUser?.assignedClass) return currentUser.assignedClass;
+    return 'ALL';
+  });
+
+  React.useEffect(() => {
+    if (isGuruKelas && currentUser?.assignedClass) {
+      setFilterClass(currentUser.assignedClass);
+    }
+  }, [isGuruKelas, currentUser?.assignedClass]);
+
   const [filterAcademicYear, setFilterAcademicYear] = useState<string>(schoolProfile.currentAcademicYear);
   const [filterSemester, setFilterSemester] = useState<string>(schoolProfile.currentSemester);
 

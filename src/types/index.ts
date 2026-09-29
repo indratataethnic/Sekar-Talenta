@@ -66,12 +66,12 @@ export interface Teacher {
   id: string;
   nip?: string;
   fullName: string;
-  position: string; // Jabatan (e.g. Kepala Sekolah, Guru Kelas 1 A, Guru PJOK, Guru PAI, dll.)
+  position: string; // Jabatan (e.g. Kepala Sekolah, Guru Kelas 1 A, Pelatih Seni Tari, dll.)
   additionalDuties?: string; // Tugas Tambahan (e.g. Pembina Duta TPPK, Pembina Pramuka, Koordinator UKS, dll.)
-  phone?: string;
-  email?: string;
   avatarUrl?: string;
   isActive: boolean;
+  teacherType?: 'internal' | 'external'; // 'internal' = Guru/Tendik Sekolah, 'external' = Pembina/Pelatih Luar
+  organization?: string; // Asal Lembaga / Sanggar / Klub / Komunitas (untuk pembina eksternal)
   createdAt: string;
   updatedAt: string;
   isDemo?: boolean;

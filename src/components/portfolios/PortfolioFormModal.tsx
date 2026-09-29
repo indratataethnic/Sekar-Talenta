@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Modal } from '../common/Modal';
-import { Portfolio, PortfolioCategory } from '../../types';
+import { Portfolio, PortfolioCategory, Student } from '../../types';
 import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
+import { StudentSelector } from '../common/StudentSelector';
 
 interface PortfolioFormModalProps {
   isOpen: boolean;
@@ -18,19 +19,37 @@ export const PortfolioFormModal: React.FC<PortfolioFormModalProps> = ({
   const { students, addPortfolio, updatePortfolio } = useData();
   const { currentUser, isMurid } = useAuth();
 
-  const [selectedStudentId, setSelectedStudentId] = useState(
-    portfolioToEdit?.studentId || (isMurid ? currentUser?.studentId || students[0]?.id : students[0]?.id || '')
-  );
-  const [title, setTitle] = useState(portfolioToEdit?.title || '');
-  const [category, setCategory] = useState<PortfolioCategory>(portfolioToEdit?.category || 'karya');
-  const [description, setDescription] = useState(portfolioToEdit?.description || '');
-  const [date, setDate] = useState(portfolioToEdit?.date || new Date().toISOString().split('T')[0]);
-  const [reflection, setReflection] = useState(portfolioToEdit?.reflection || '');
-  const [coachOrTeacherName, setCoachOrTeacherName] = useState(
-    portfolioToEdit?.coachOrTeacherName || currentUser?.displayName || 'Guru Pembina'
-  );
-  const [tagsText, setTagsText] = useState(portfolioToEdit?.tags?.join(', ') || '');
+  const [selectedStudentId, setSelectedStudentId] = useState('');
+  const [title, setTitle] = useState('');
+  const [category, setCategory] = useState<PortfolioCategory>('karya');
+  const [description, setDescription] = useState('');
+  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+  const [reflection, setReflection] = useState('');
+  const [coachOrTeacherName, setCoachOrTeacherName] = useState(currentUser?.displayName || 'Guru Pembina');
+  const [tagsText, setTagsText] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (portfolioToEdit) {
+      setSelectedStudentId(portfolioToEdit.studentId);
+      setTitle(portfolioToEdit.title);
+      setCategory(portfolioToEdit.category || 'karya');
+      setDescription(portfolioToEdit.description || '');
+      setDate(portfolioToEdit.date || new Date().toISOString().split('T')[0]);
+      setReflection(portfolioToEdit.reflection || '');
+      setCoachOrTeacherName(portfolioToEdit.coachOrTeacherName || currentUser?.displayName || 'Guru Pembina');
+      setTagsText(portfolioToEdit.tags?.join(', ') || '');
+    } else {
+      setSelectedStudentId(isMurid ? currentUser?.studentId || students[0]?.id || '' : students[0]?.id || '');
+      setTitle('');
+      setCategory('karya');
+      setDescription('');
+      setDate(new Date().toISOString().split('T')[0]);
+      setReflection('');
+      setCoachOrTeacherName(currentUser?.displayName || 'Guru Pembina');
+      setTagsText('');
+    }
+  }, [portfolioToEdit, isOpen, isMurid, currentUser, students]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -82,23 +101,23 @@ export const PortfolioFormModal: React.FC<PortfolioFormModalProps> = ({
       maxWidth="lg"
     >
       <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label className="block text-xs font-bold text-slate-700 mb-1">
-            Nama Murid Pemilik Karya *
-          </label>
-          <select
-            disabled={isMurid}
-            value={selectedStudentId}
-            onChange={(e) => setSelectedStudentId(e.target.value)}
-            className="w-full px-3 py-2 text-xs font-medium rounded-xl border border-slate-300 focus:outline-emerald-600 bg-white"
-          >
-            {students.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.fullName} ({s.classId} - NISN: {s.nisn})
-              </option>
-            ))}
-          </select>
-        </div>
+        {isMurid ? (
+          <div>
+            <label className="block text-xs font-bold text-slate-700 mb-1">
+              Nama Murid Pemilik Karya
+            </label>
+            <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800">
+              {students.find((s) => s.id === selectedStudentId)?.fullName || 'Murid'} ({students.find((s) => s.id === selectedStudentId)?.classId})
+            </div>
+          </div>
+        ) : (
+          <StudentSelector
+            selectedStudentId={selectedStudentId}
+            onSelectStudent={(st: Student) => setSelectedStudentId(st.id)}
+            label="Nama Murid Pemilik Karya (Cari Berdasarkan Kelas / Nama)"
+            required
+          />
+        )}
 
         <div>
           <label className="block text-xs font-bold text-slate-700 mb-1">

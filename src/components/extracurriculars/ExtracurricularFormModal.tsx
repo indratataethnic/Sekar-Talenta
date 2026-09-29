@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Modal } from '../common/Modal';
 import { Extracurricular } from '../../types';
 import { useData } from '../../context/DataContext';
@@ -14,18 +14,42 @@ export const ExtracurricularFormModal: React.FC<ExtracurricularFormModalProps> =
   onClose,
   ekskulToEdit,
 }) => {
-  const { addExtracurricular, updateExtracurricular } = useData();
+  const { addExtracurricular, updateExtracurricular, teachers } = useData();
 
-  const [name, setName] = useState(ekskulToEdit?.name || '');
-  const [category, setCategory] = useState<any>(ekskulToEdit?.category || 'Seni Budaya');
-  const [description, setDescription] = useState(ekskulToEdit?.description || '');
-  const [coachName, setCoachName] = useState(ekskulToEdit?.coachName || '');
-  const [coachPhone, setCoachPhone] = useState(ekskulToEdit?.coachPhone || '');
-  const [dayTimeSchedule, setDayTimeSchedule] = useState(ekskulToEdit?.dayTimeSchedule || 'Jumat, 14.00 - 15.30 WIB');
-  const [location, setLocation] = useState(ekskulToEdit?.location || 'Ruang Serbaguna');
-  const [capacity, setCapacity] = useState(ekskulToEdit?.capacity || 30);
-  const [goalsText, setGoalsText] = useState(ekskulToEdit?.goals.join('\n') || '');
+  const [name, setName] = useState('');
+  const [category, setCategory] = useState<any>('Seni Budaya');
+  const [description, setDescription] = useState('');
+  const [coachName, setCoachName] = useState('');
+  const [coachPhone, setCoachPhone] = useState('');
+  const [dayTimeSchedule, setDayTimeSchedule] = useState('Jumat, 14.00 - 15.30 WIB');
+  const [location, setLocation] = useState('Ruang Serbaguna');
+  const [capacity, setCapacity] = useState(30);
+  const [goalsText, setGoalsText] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (ekskulToEdit) {
+      setName(ekskulToEdit.name);
+      setCategory(ekskulToEdit.category || 'Seni Budaya');
+      setDescription(ekskulToEdit.description || '');
+      setCoachName(ekskulToEdit.coachName || '');
+      setCoachPhone(ekskulToEdit.coachPhone || '');
+      setDayTimeSchedule(ekskulToEdit.dayTimeSchedule || 'Jumat, 14.00 - 15.30 WIB');
+      setLocation(ekskulToEdit.location || 'Ruang Serbaguna');
+      setCapacity(ekskulToEdit.capacity || 30);
+      setGoalsText(ekskulToEdit.goals?.join('\n') || '');
+    } else {
+      setName('');
+      setCategory('Seni Budaya');
+      setDescription('');
+      setCoachName('');
+      setCoachPhone('');
+      setDayTimeSchedule('Jumat, 14.00 - 15.30 WIB');
+      setLocation('Ruang Serbaguna');
+      setCapacity(30);
+      setGoalsText('');
+    }
+  }, [ekskulToEdit, isOpen]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -113,11 +137,21 @@ export const ExtracurricularFormModal: React.FC<ExtracurricularFormModalProps> =
             <input
               type="text"
               required
+              list="coach-suggestions"
               value={coachName}
               onChange={(e) => setCoachName(e.target.value)}
-              placeholder="Nama Guru atau Pelatih Ahli"
+              placeholder="Pilih atau ketik nama guru / pelatih ahli"
               className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 focus:outline-emerald-600"
             />
+            <datalist id="coach-suggestions">
+              {teachers.map((t) => (
+                <option
+                  key={t.id}
+                  value={t.fullName}
+                  label={`${t.fullName} (${t.teacherType === 'external' ? `Pembina Luar - ${t.organization || 'Eksternal'}` : t.position})`}
+                />
+              ))}
+            </datalist>
           </div>
 
           <div>
