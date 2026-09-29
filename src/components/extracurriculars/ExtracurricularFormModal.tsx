@@ -13,7 +13,8 @@ import {
   Layers,
   Sparkles,
   Info,
-  UserCheck
+  UserCheck,
+  AlertCircle
 } from 'lucide-react';
 
 interface ExtracurricularFormModalProps {
@@ -30,8 +31,8 @@ const COMMON_ROLES = [
   'Koreografer Tari',
   'Pelatih Olahraga / Fisik',
   'Pelatih Vokal & Tabuhan',
-  'Pembina Putra',
-  'Pembina Putri',
+  'Pembina Pramuka Putra',
+  'Pembina Pramuka Putri',
   'Asisten Pelatih'
 ];
 
@@ -49,6 +50,7 @@ export const ExtracurricularFormModal: React.FC<ExtracurricularFormModalProps> =
   const [location, setLocation] = useState('Ruang Serbaguna');
   const [capacity, setCapacity] = useState(30);
   const [goalsText, setGoalsText] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
   const [coaches, setCoaches] = useState<ExtracurricularCoach[]>([
     {
       name: '',
@@ -61,16 +63,19 @@ export const ExtracurricularFormModal: React.FC<ExtracurricularFormModalProps> =
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
+    if (!isOpen) return;
+
+    setErrorMessage('');
     if (ekskulToEdit) {
-      setName(ekskulToEdit.name);
+      setName(ekskulToEdit.name || '');
       setCategory(ekskulToEdit.category || 'Seni Budaya');
       setDescription(ekskulToEdit.description || '');
       setDayTimeSchedule(ekskulToEdit.dayTimeSchedule || 'Jumat, 14.00 - 15.30 WIB');
       setLocation(ekskulToEdit.location || 'Ruang Serbaguna');
       setCapacity(ekskulToEdit.capacity || 30);
-      setGoalsText(ekskulToEdit.goals?.join('\n') || '');
+      setGoalsText(Array.isArray(ekskulToEdit.goals) ? ekskulToEdit.goals.join('\n') : '');
 
-      if (ekskulToEdit.coaches && ekskulToEdit.coaches.length > 0) {
+      if (Array.isArray(ekskulToEdit.coaches) && ekskulToEdit.coaches.length > 0) {
         setCoaches(
           ekskulToEdit.coaches.map((c) => ({
             name: c.name || '',
@@ -81,7 +86,6 @@ export const ExtracurricularFormModal: React.FC<ExtracurricularFormModalProps> =
           }))
         );
       } else if (ekskulToEdit.coachName) {
-        // Parse possible multiple coaches separated by & or create single coach
         const parts = ekskulToEdit.coachName.split('&').map((p) => p.trim()).filter(Boolean);
         if (parts.length > 1) {
           setCoaches(
@@ -141,7 +145,7 @@ export const ExtracurricularFormModal: React.FC<ExtracurricularFormModalProps> =
         }
       ]);
     }
-  }, [ekskulToEdit, isOpen, teachers]);
+  }, [ekskulToEdit, isOpen]);
 
   const handleAddCoach = () => {
     setCoaches((prev) => [
@@ -176,7 +180,7 @@ export const ExtracurricularFormModal: React.FC<ExtracurricularFormModalProps> =
           if (matched.organization) {
             current.organization = matched.organization;
           }
-          if (matched.position && !current.role) {
+          if (matched.position && (!current.role || current.role === 'Pembina Utama')) {
             current.role = matched.position;
           }
         }
@@ -189,57 +193,75 @@ export const ExtracurricularFormModal: React.FC<ExtracurricularFormModalProps> =
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim()) return;
+    setErrorMessage('');
 
-    // Filter coaches with non-empty names
-    const validCoaches = coaches
+    if (!name.trim()) {
+      setErrorMessage('Nama ekstrakurikuler wajib diisi.');
+      return;
+    }
+
+    // Sanitize coaches to ensure NO undefined properties exist
+    const validCoaches: ExtracurricularCoach[] = coaches
+      .filter((c) => c && c.name && c.name.trim().length > 0)
       .map((c) => ({
-        ...c,
         name: c.name.trim(),
-        role: c.role?.trim() || 'Pembina',
-        organization: c.type === 'external' ? c.organization?.trim() : undefined,
-        phone: c.phone?.trim()
-      }))
-      .filter((c) => c.name.length > 0);
+        role: c.role ? c.role.trim() : 'Pembina',
+        type: c.type === 'external' ? 'external' : 'internal',
+        organization: c.type === 'external' && c.organization ? c.organization.trim() : '',
+        phone: c.phone ? c.phone.trim() : ''
+      }));
 
-    const primaryCoachName = validCoaches.map((c) => c.name).join(' & ') || 'Belum Ditentukan';
-    const primaryPhone = validCoaches.find((c) => c.phone)?.phone || '';
+    if (validCoaches.length === 0) {
+      setErrorMessage('Mohon cantumkan minimal 1 nama pembina/pelatih ekstrakurikuler.');
+      return;
+    }
+
+    const primaryCoachName = validCoaches.map((c) => c.name).join(' & ');
+    const primaryPhone = validCoaches.find((c) => c.phone && c.phone.length > 0)?.phone || '';
 
     setIsSubmitting(true);
     try {
       const code = ekskulToEdit?.code || name.toLowerCase().replace(/[^a-z0-9]+/g, '_');
+      const goalsList = goalsText
+        .split('\n')
+        .map((g) => g.trim())
+        .filter(Boolean);
+
       if (ekskulToEdit) {
         await updateExtracurricular(ekskulToEdit.id, {
-          name,
+          name: name.trim(),
           category,
-          description,
+          description: description.trim(),
           coachName: primaryCoachName,
           coaches: validCoaches,
           coachPhone: primaryPhone,
-          dayTimeSchedule,
-          location,
-          capacity: Number(capacity),
-          goals: goalsText.split('\n').map((g) => g.trim()).filter(Boolean)
+          dayTimeSchedule: dayTimeSchedule.trim(),
+          location: location.trim(),
+          capacity: Number(capacity) || 30,
+          goals: goalsList
         });
       } else {
         await addExtracurricular({
           code,
-          name,
+          name: name.trim(),
           category,
           icon: 'Layers',
           badgeColor: 'blue',
-          description,
+          description: description.trim(),
           coachName: primaryCoachName,
           coaches: validCoaches,
           coachPhone: primaryPhone,
-          dayTimeSchedule,
-          location,
-          capacity: Number(capacity),
-          goals: goalsText.split('\n').map((g) => g.trim()).filter(Boolean),
+          dayTimeSchedule: dayTimeSchedule.trim(),
+          location: location.trim(),
+          capacity: Number(capacity) || 30,
+          goals: goalsList,
           isActive: true
         });
       }
       onClose();
+    } catch (err: any) {
+      console.error('Error saving extracurricular:', err);
+      setErrorMessage(err?.message || 'Terjadi kesalahan saat menyimpan data ekstrakurikuler.');
     } finally {
       setIsSubmitting(false);
     }
@@ -254,6 +276,13 @@ export const ExtracurricularFormModal: React.FC<ExtracurricularFormModalProps> =
       maxWidth="2xl"
     >
       <form onSubmit={handleSubmit} className="space-y-5">
+        {errorMessage && (
+          <div className="p-3 bg-rose-50 border border-rose-200 text-rose-700 text-xs rounded-xl flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 flex-shrink-0 text-rose-600" />
+            <span>{errorMessage}</span>
+          </div>
+        )}
+
         {/* Section 1: Data Pokok Ekstrakurikuler */}
         <div className="bg-slate-50/70 p-4 rounded-2xl border border-slate-200/80 space-y-3">
           <div className="flex items-center gap-2 text-xs font-bold text-slate-800">
@@ -455,13 +484,13 @@ export const ExtracurricularFormModal: React.FC<ExtracurricularFormModalProps> =
                   {coach.type === 'external' ? (
                     <div>
                       <label className="block text-[11px] font-bold text-amber-900 mb-1 flex items-center gap-1">
-                        <Building2 className="w-3 h-3 text-amber-600" /> Asal Lembaga / Sanggar / Klub *
+                        <Building2 className="w-3 h-3 text-amber-600" /> Asal Lembaga / Sanggar / Klub
                       </label>
                       <input
                         type="text"
                         value={coach.organization || ''}
                         onChange={(e) => handleCoachChange(index, 'organization', e.target.value)}
-                        placeholder="Contoh: Sanggar Seni Tari Suropati, Klub Olahraga, dll."
+                        placeholder="Contoh: Sanggar Seni Tari Suropati, Paguyuban Batik, dll."
                         className="w-full px-3 py-1.5 text-xs rounded-xl border border-amber-300 bg-amber-50/40 focus:outline-amber-600"
                       />
                     </div>

@@ -40,14 +40,24 @@ export const ExtracurricularListView: React.FC = () => {
 
   if (currentEkskul) {
     return (
-      <ExtracurricularDetailView
-        extracurricular={currentEkskul}
-        onBack={() => setSelectedEkskul(null)}
-        onEdit={() => {
-          setEditingEkskul(currentEkskul);
-          setIsFormOpen(true);
-        }}
-      />
+      <>
+        <ExtracurricularDetailView
+          extracurricular={currentEkskul}
+          onBack={() => setSelectedEkskul(null)}
+          onEdit={() => {
+            setEditingEkskul(currentEkskul);
+            setIsFormOpen(true);
+          }}
+        />
+        <ExtracurricularFormModal
+          isOpen={isFormOpen}
+          onClose={() => {
+            setIsFormOpen(false);
+            setEditingEkskul(null);
+          }}
+          ekskulToEdit={editingEkskul}
+        />
+      </>
     );
   }
 
