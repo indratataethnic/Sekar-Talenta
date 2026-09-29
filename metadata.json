@@ -1,6 +1,6 @@
 {
-  "name": "SEKAR TALENTA - Sistem Eksplorasi Karakter, Bakat, Minat, dan Talenta",
-  "description": "Sistem Eksplorasi Karakter, Bakat, Minat, dan Talenta Murid UPT SD Negeri Karanganyar Kota Pasuruan",
+  "name": "SEKAR TALENTA - Sistem Eksplorasi Karakter, Bakat, Minat, dan Talenta Murid",
+  "description": "Sistem Eksplorasi Karakter, Bakat, Minat, dan Talenta Murid UPT SD Negeri Karanganyar Kota Pasuruan. Kenali Potensi • Kembangkan Bakat • Tumbuhkan Kepemimpinan",
   "requestFramePermissions": [],
   "majorCapabilities": [
     "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"

@@ -15,12 +15,12 @@ export const Footer: React.FC = () => {
           <span>{schoolProfile.city}</span>
         </div>
 
-        <div className="flex items-center gap-1.5 text-slate-500">
+        <div className="flex items-center gap-1.5 text-emerald-800 font-semibold bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200 text-[11px]">
           <span>{schoolProfile.tagline}</span>
         </div>
 
-        <div className="flex items-center gap-3 text-slate-400">
-          <span>SEKAR TALENTA © {new Date().getFullYear()}</span>
+        <div className="flex items-center gap-2 text-slate-400 text-[11px]">
+          <span>SEKAR TALENTA — Sistem Eksplorasi Karakter, Bakat, Minat, dan Talenta Murid © {new Date().getFullYear()}</span>
         </div>
       </div>
     </footer>

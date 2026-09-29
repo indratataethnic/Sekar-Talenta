@@ -86,8 +86,16 @@ export const LoginView: React.FC = () => {
         <div className="lg:col-span-6 bg-gradient-to-b from-emerald-900 to-teal-950 p-6 sm:p-8 text-white flex flex-col justify-between space-y-6">
           <div className="space-y-4">
             <Logo size="lg" variant="dark" />
-            <div className="p-3.5 rounded-2xl bg-white/10 border border-white/15 text-xs text-emerald-100 leading-relaxed">
-              Sistem Informasi Rekam Jejak Bakat, Minat & Duta Sekolah UPT SD Negeri Karanganyar, Kota Pasuruan.
+            <div className="p-3.5 rounded-2xl bg-white/10 border border-white/15 space-y-2">
+              <h3 className="text-xs sm:text-sm font-bold text-white leading-snug">
+                Sistem Eksplorasi Karakter, Bakat, Minat, dan Talenta Murid
+              </h3>
+              <div className="inline-block px-2.5 py-1 rounded-lg bg-emerald-950/70 border border-emerald-500/40 text-[11px] font-semibold text-amber-300">
+                Kenali Potensi • Kembangkan Bakat • Tumbuhkan Kepemimpinan
+              </div>
+              <p className="text-[11px] text-emerald-100/80 leading-relaxed pt-1 border-t border-white/10">
+                Portal resmi terintegrasi UPT SD Negeri Karanganyar, Kota Pasuruan.
+              </p>
             </div>
 
             {/* DIRECT ACCESS: Murid / Orang Tua (Tanpa Login / Bebas Akses) */}

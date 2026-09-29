@@ -78,9 +78,14 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
       <div className="rounded-3xl bg-gradient-to-r from-emerald-900 via-teal-900 to-emerald-800 p-6 sm:p-8 text-white relative overflow-hidden shadow-lg border border-emerald-700/50">
         <div className="absolute right-0 top-0 bottom-0 w-1/3 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-amber-400/20 via-transparent to-transparent pointer-events-none" />
         <div className="relative z-10 max-w-3xl">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-800/80 border border-emerald-600/60 text-amber-300 text-xs font-bold mb-3 shadow-xs">
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>SEKAR TALENTA • UPT SDN Karanganyar Kota Pasuruan</span>
+          <div className="flex flex-wrap items-center gap-2 mb-3">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-800/90 border border-emerald-600/70 text-amber-300 text-xs font-bold shadow-xs">
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>SEKAR TALENTA • Sistem Eksplorasi Karakter, Bakat, Minat, dan Talenta Murid</span>
+            </div>
+            <div className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-emerald-950/80 border border-amber-400/40 text-amber-200 text-xs font-semibold">
+              Kenali Potensi • Kembangkan Bakat • Tumbuhkan Kepemimpinan
+            </div>
           </div>
           <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-white">
             {isMurid

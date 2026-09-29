@@ -84,12 +84,20 @@ export const Sidebar: React.FC<SidebarProps> = ({
         }`}
       >
         {/* Brand Header */}
-        <div className="p-5 border-b border-emerald-800/50 bg-emerald-950/40">
+        <div className="p-5 border-b border-emerald-800/50 bg-emerald-950/40 space-y-2.5">
           <Logo size="md" variant="dark" />
-          <div className="mt-3 flex items-center justify-between">
-            <span className={`text-[11px] px-2.5 py-0.5 rounded-full uppercase tracking-wider ${roleBadge.color}`}>
-              {roleBadge.label}
+          <p className="text-[11px] text-emerald-100/90 leading-tight font-medium">
+            Sistem Eksplorasi Karakter, Bakat, Minat, dan Talenta Murid
+          </p>
+          <div className="pt-1 flex flex-col gap-1.5">
+            <span className="text-[10px] px-2 py-0.5 rounded-lg bg-emerald-900/80 border border-emerald-700/60 text-emerald-200 font-semibold leading-tight">
+              Kenali Potensi • Kembangkan Bakat • Tumbuhkan Kepemimpinan
             </span>
+            <div className="flex items-center justify-between pt-0.5">
+              <span className={`text-[11px] px-2.5 py-0.5 rounded-full uppercase tracking-wider ${roleBadge.color}`}>
+                {roleBadge.label}
+              </span>
+            </div>
           </div>
         </div>
 
