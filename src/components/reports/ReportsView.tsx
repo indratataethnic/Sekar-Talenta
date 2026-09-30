@@ -89,15 +89,17 @@ export const ReportsView: React.FC = () => {
         `"${m.coachName || ''}"`
       ]);
     } else if (selectedReportType === 'ekskul_participation') {
-      headers = ['ID', 'Nama Murid', 'Kelas', 'Ekstrakurikuler', 'Kehadiran %', 'Status', 'Catatan Pelatih'];
+      headers = ['ID', 'Nama Murid', 'Kelas', 'Ekstrakurikuler', 'Kehadiran %', 'Nilai Rapor', 'Deskripsi Capaian Rapor', 'Penilai', 'Status'];
       rows = extracurricularMembers.map((m) => [
         m.id,
         `"${m.studentName}"`,
         `"${m.classId}"`,
         `"${m.extracurricularName}"`,
         `${m.attendancePercentage || 100}%`,
-        m.status,
-        `"${m.coachNotes || ''}"`
+        `"${m.grade || 'Belum Dinilai'}"`,
+        `"${m.reportDescription || ''}"`,
+        `"${m.evaluatedBy || ''}"`,
+        m.status
       ]);
     } else if (selectedReportType === 'talent_mapping') {
       headers = ['ID', 'Nama Murid', 'Kelas', 'Kategori Minat', 'Topik Khusus', 'Tingkat Ketertarikan', 'Aktivitas Diminati', 'Tahun/Semester'];
@@ -318,8 +320,9 @@ export const ReportsView: React.FC = () => {
                   <th className="p-3">Kelas</th>
                   <th className="p-3">Ekstrakurikuler</th>
                   <th className="p-3">Kehadiran (%)</th>
-                  <th className="p-3">Status</th>
-                  <th className="p-3">Catatan Pembina</th>
+                  <th className="p-3">Nilai Rapor</th>
+                  <th className="p-3">Deskripsi Capaian Rapor</th>
+                  <th className="p-3">Penilai</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200">
@@ -333,11 +336,18 @@ export const ReportsView: React.FC = () => {
                       <td className="p-3 font-semibold text-blue-900">{m.extracurricularName}</td>
                       <td className="p-3 font-bold text-emerald-700">{m.attendancePercentage || 100}%</td>
                       <td className="p-3">
-                        <Badge variant="blue" size="sm">
-                          {m.status.toUpperCase()}
-                        </Badge>
+                        {m.grade ? (
+                          <span className="px-2 py-0.5 rounded bg-amber-200 text-amber-950 font-black text-[11px]">
+                            {m.grade}
+                          </span>
+                        ) : (
+                          <span className="text-slate-400 italic text-[11px]">Belum Dinilai</span>
+                        )}
                       </td>
-                      <td className="p-3 text-slate-600 italic">{m.coachNotes || '-'}</td>
+                      <td className="p-3 text-slate-700 font-medium max-w-xs leading-relaxed">
+                        {m.reportDescription ? `"${m.reportDescription}"` : <span className="text-slate-400 italic">-</span>}
+                      </td>
+                      <td className="p-3 text-slate-500 text-[11px]">{m.evaluatedBy || '-'}</td>
                     </tr>
                   ))}
               </tbody>

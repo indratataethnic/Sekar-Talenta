@@ -442,13 +442,41 @@ export const StudentDetailView: React.FC<StudentDetailViewProps> = ({ student, o
                   </div>
 
                   <div className="flex items-center justify-between text-xs pt-2 border-t border-slate-100">
-                    <span className="text-slate-500">Persentase Kehadiran:</span>
+                    <span className="text-slate-500">Kehadiran Latihan:</span>
                     <span className="font-extrabold text-emerald-700">{ek.attendancePercentage || 100}%</span>
+                  </div>
+
+                  {/* Report Card Grade & Description Section */}
+                  <div className="p-3 rounded-2xl bg-amber-50/80 border border-amber-200/90 space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] font-bold text-amber-950 flex items-center gap-1">
+                        <Award className="w-3.5 h-3.5 text-amber-600" /> Nilai Rapor (Kurikulum Merdeka):
+                      </span>
+                      {ek.grade ? (
+                        <span className="px-2.5 py-0.5 rounded-lg bg-amber-300 text-amber-950 font-black text-xs shadow-2xs">
+                          {ek.grade}
+                        </span>
+                      ) : (
+                        <span className="text-[10.5px] font-semibold text-slate-400 italic bg-white px-2 py-0.5 rounded">
+                          Belum Dinilai Pembina
+                        </span>
+                      )}
+                    </div>
+
+                    {ek.reportDescription ? (
+                      <div className="text-xs text-slate-800 leading-relaxed font-medium bg-white p-2.5 rounded-xl border border-amber-100">
+                        "{ek.reportDescription}"
+                      </div>
+                    ) : (
+                      <p className="text-[11px] text-slate-500 italic">
+                        Menunggu masukan penilaian dan deskripsi capaian dari Guru Pembina.
+                      </p>
+                    )}
                   </div>
 
                   {ek.coachNotes && (
                     <p className="text-xs text-slate-600 bg-slate-50 p-2.5 rounded-xl italic">
-                      Catatan Pembina: "{ek.coachNotes}"
+                      Catatan Tambahan Pembina: "{ek.coachNotes}"
                     </p>
                   )}
                 </Card>

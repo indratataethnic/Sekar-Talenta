@@ -223,6 +223,13 @@ export interface ExtracurricularMember {
   status: 'menunggu' | 'aktif' | 'nonaktif';
   attendancePercentage?: number;
   coachNotes?: string;
+  // Report Card Assessment Fields (Kurikulum Merdeka)
+  grade?: 'Sangat Baik' | 'Baik' | 'Cukup' | 'Perlu Bimbingan';
+  reportDescription?: string;
+  academicYear?: string;
+  semester?: 'Ganjil' | 'Genap';
+  evaluatedBy?: string;
+  evaluatedAt?: string;
   createdAt: string;
 }
 

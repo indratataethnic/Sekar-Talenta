@@ -1234,6 +1234,11 @@ export const initialExtracurricularMembers: ExtracurricularMember[] = [
     status: 'aktif',
     attendancePercentage: 95,
     coachNotes: 'Sangat cepat memahami konsep perulangan (loops) dalam blok kode Scratch.',
+    grade: 'Sangat Baik',
+    reportDescription: 'Ahmad Fauzan Pratama sangat aktif dan bersemangat mengikuti latihan TIK & Robotika Sederhana, menunjukkan penguasaan pembuatan animasi Scratch serta disiplin yang sangat baik.',
+    academicYear: '2024/2025',
+    semester: 'Genap',
+    evaluatedBy: 'Bapak Hendra Gunawan, S.Kom.',
     createdAt: '2024-08-01T08:00:00Z'
   },
   {
@@ -1248,6 +1253,11 @@ export const initialExtracurricularMembers: ExtracurricularMember[] = [
     status: 'aktif',
     attendancePercentage: 100,
     coachNotes: 'Hafalan gerak tari Remo cilik sangat mantap dan berkarakter.',
+    grade: 'Sangat Baik',
+    reportDescription: 'Siti Nurhaliza Zahra sangat aktif dan tekun dalam mengikuti latihan Seni Tari Tradisional, menguasai wiraga dan wirama Tari Remo Cilik Pasuruan dengan sangat memuaskan.',
+    academicYear: '2024/2025',
+    semester: 'Genap',
+    evaluatedBy: 'Ibu Ratna Dewi, S.Pd.',
     createdAt: '2024-08-01T08:00:00Z'
   },
   {
@@ -1262,6 +1272,11 @@ export const initialExtracurricularMembers: ExtracurricularMember[] = [
     status: 'aktif',
     attendancePercentage: 90,
     coachNotes: 'Anggota Siaga yang cekatan dan bersemangat dalam permainan regu.',
+    grade: 'Baik',
+    reportDescription: 'Budi Santoso Wibowo aktif mengikuti kegiatan Gerakan Pramuka dan mampu menguasai keterampilan tali-temali serta kerja sama regu dengan baik.',
+    academicYear: '2024/2025',
+    semester: 'Genap',
+    evaluatedBy: 'Kak Eko Prasetyo, S.Pd.',
     createdAt: '2024-08-01T08:00:00Z'
   },
   {
@@ -1276,6 +1291,11 @@ export const initialExtracurricularMembers: ExtracurricularMember[] = [
     status: 'aktif',
     attendancePercentage: 100,
     coachNotes: 'Makhraj huruf fasih dan hafalan surah An-Naba sangat lancar.',
+    grade: 'Sangat Baik',
+    reportDescription: 'Dimas Aditya Saputra sangat tekun dan fasih dalam bimbingan Tahfidz Al-Qur\'an, berhasil menuntaskan hafalan Juz 30 dengan tajwid yang sangat baik.',
+    academicYear: '2024/2025',
+    semester: 'Genap',
+    evaluatedBy: 'Ustadz M. Farhan, S.Pd.I.',
     createdAt: '2024-08-01T08:00:00Z'
   },
   {
@@ -1290,6 +1310,11 @@ export const initialExtracurricularMembers: ExtracurricularMember[] = [
     status: 'aktif',
     attendancePercentage: 95,
     coachNotes: 'Goresan malam canting halus dan mampu memadukan warna cerah.',
+    grade: 'Sangat Baik',
+    reportDescription: 'Farah Nabila Azzahra sangat terampil dalam membatik tulis dan jumputan motif Pasuruan, menunjukkan ketelitian dan kreativitas seni yang tinggi.',
+    academicYear: '2024/2025',
+    semester: 'Genap',
+    evaluatedBy: 'Ibu Ratna Dewi, S.Pd.',
     createdAt: '2024-08-01T08:00:00Z'
   },
   {
@@ -1304,6 +1329,11 @@ export const initialExtracurricularMembers: ExtracurricularMember[] = [
     status: 'aktif',
     attendancePercentage: 92,
     coachNotes: 'Kecepatan lari sprint 60 meter sangat potensial untuk O2SN.',
+    grade: 'Baik',
+    reportDescription: 'Gilang Pratama Yudha aktif dan disiplin dalam berlatih Atletik & Kebugaran Jasmani, menunjukkan peningkatan teknik lari sprint yang baik.',
+    academicYear: '2024/2025',
+    semester: 'Genap',
+    evaluatedBy: 'Bapak Agus Setiawan, S.Pd.',
     createdAt: '2024-08-01T08:00:00Z'
   }
 ];

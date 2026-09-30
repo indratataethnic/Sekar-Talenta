@@ -24,6 +24,7 @@ import { useAuth } from '../../context/AuthContext';
 import { Card } from '../common/Card';
 import { Badge } from '../common/Badge';
 import { ExtracurricularRegisterModal } from './ExtracurricularRegisterModal';
+import { ExtracurricularGradeModal } from './ExtracurricularGradeModal';
 import { ConfirmDialog } from '../common/ConfirmDialog';
 
 interface ExtracurricularDetailViewProps {
@@ -48,6 +49,7 @@ export const ExtracurricularDetailView: React.FC<ExtracurricularDetailViewProps>
 
   const [activeTab, setActiveTab] = useState<'members' | 'goals' | 'activities' | 'achievements'>('members');
   const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
+  const [gradingMember, setGradingMember] = useState<ExtracurricularMember | null>(null);
   const [deletingMemberId, setDeletingMemberId] = useState<string | null>(null);
 
   const members = extracurricularMembers.filter(
@@ -300,7 +302,7 @@ export const ExtracurricularDetailView: React.FC<ExtracurricularDetailViewProps>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {members.map((member) => (
-                <Card key={member.id} className="space-y-2">
+                <Card key={member.id} className="space-y-2.5">
                   <div className="flex items-start justify-between">
                     <div>
                       <h4 className="text-sm font-bold text-slate-900">{member.studentName}</h4>
@@ -318,22 +320,62 @@ export const ExtracurricularDetailView: React.FC<ExtracurricularDetailViewProps>
                     </span>
                   </div>
 
+                  {/* Report Card Assessment Badge */}
+                  <div className="p-2.5 rounded-xl bg-amber-50/70 border border-amber-200/80 space-y-1">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-bold text-amber-900 uppercase tracking-wider flex items-center gap-1">
+                        <Award className="w-3 h-3 text-amber-600" /> Nilai Rapor:
+                      </span>
+                      {member.grade ? (
+                        <span className="px-2 py-0.5 rounded-md bg-amber-200 text-amber-950 font-extrabold text-[10.5px]">
+                          {member.grade}
+                        </span>
+                      ) : (
+                        <span className="text-[10px] font-semibold text-slate-400 italic">
+                          Belum Dinilai
+                        </span>
+                      )}
+                    </div>
+
+                    {member.reportDescription ? (
+                      <p className="text-[11px] text-slate-700 leading-snug line-clamp-2">
+                        "{member.reportDescription}"
+                      </p>
+                    ) : (
+                      <p className="text-[10px] text-slate-400 italic">
+                        Klik tombol di bawah untuk input nilai & narasi kualitatif rapor.
+                      </p>
+                    )}
+                  </div>
+
                   {member.coachNotes && (
                     <p className="text-xs text-slate-600 bg-slate-50 p-2 rounded-lg italic">
                       "{member.coachNotes}"
                     </p>
                   )}
 
-                  {canManageExtracurriculars && (
-                    <div className="flex items-center justify-end pt-1">
+                  <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+                    {canManageExtracurriculars ? (
+                      <button
+                        onClick={() => setGradingMember(member)}
+                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold transition-all shadow-2xs active:scale-95"
+                      >
+                        <Award className="w-3.5 h-3.5 text-amber-300" /> Input / Edit Nilai
+                      </button>
+                    ) : (
+                      <span />
+                    )}
+
+                    {canManageExtracurriculars && (
                       <button
                         onClick={() => setDeletingMemberId(member.id)}
                         className="p-1 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 text-xs flex items-center gap-1 font-semibold"
+                        title="Keluarkan Peserta"
                       >
                         <Trash2 className="w-3.5 h-3.5" /> Hapus
                       </button>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </Card>
               ))}
             </div>
@@ -406,6 +448,13 @@ export const ExtracurricularDetailView: React.FC<ExtracurricularDetailViewProps>
       <ExtracurricularRegisterModal
         isOpen={isRegisterModalOpen}
         onClose={() => setIsRegisterModalOpen(false)}
+        extracurricular={extracurricular}
+      />
+
+      <ExtracurricularGradeModal
+        isOpen={!!gradingMember}
+        onClose={() => setGradingMember(null)}
+        member={gradingMember}
         extracurricular={extracurricular}
       />
 
