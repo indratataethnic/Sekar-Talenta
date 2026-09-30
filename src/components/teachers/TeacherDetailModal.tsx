@@ -2,9 +2,9 @@ import React from 'react';
 import { Teacher } from '../../types';
 import { Modal } from '../common/Modal';
 import { Badge } from '../common/Badge';
-import { Briefcase, Award, Hash, Calendar, Sparkles, Flag, Trophy, Building2, Globe2, School } from 'lucide-react';
+import { Briefcase, Award, Hash, Calendar, Sparkles, Flag, Trophy, Building2, Globe2, School, GraduationCap } from 'lucide-react';
 import { useData } from '../../context/DataContext';
-import { getEffectiveTeacherDuties, getDetectedTeacherDutiesBreakdown, getTeacherAvatarUrl } from '../../utils/teacherUtils';
+import { getEffectiveTeacherDuties, getDetectedTeacherDutiesBreakdown } from '../../utils/teacherUtils';
 
 interface TeacherDetailModalProps {
   isOpen: boolean;
@@ -42,16 +42,11 @@ export const TeacherDetailModal: React.FC<TeacherDetailModalProps> = ({
             ? 'bg-gradient-to-r from-purple-950 via-indigo-900 to-purple-900'
             : 'bg-gradient-to-r from-emerald-950 via-teal-900 to-emerald-900'
         }`}>
-          <img
-            src={
-              teacher.avatarUrl ||
-              getTeacherAvatarUrl(teacher.gender, teacher.fullName)
-            }
-            alt={teacher.fullName}
-            className={`w-18 h-18 rounded-2xl object-cover bg-white/10 p-1 border-2 shadow-md flex-shrink-0 ${
-              isExternal ? 'border-purple-300' : 'border-amber-300'
-            }`}
-          />
+          <div className={`w-14 h-14 rounded-2xl flex items-center justify-center font-bold shadow-md flex-shrink-0 border-2 ${
+            isExternal ? 'bg-purple-900/60 border-purple-300/80 text-purple-200' : 'bg-emerald-900/60 border-amber-300/80 text-amber-300'
+          }`}>
+            {isExternal ? <Globe2 className="w-7 h-7" /> : <GraduationCap className="w-7 h-7" />}
+          </div>
           <div className="space-y-1 min-w-0">
             <div className="flex flex-wrap items-center gap-1.5">
               <Badge variant={teacher.isActive ? 'emerald' : 'slate'} dot>

@@ -265,7 +265,11 @@ export const LoginView: React.FC = () => {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs sm:text-sm shadow-md transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
+              className={`w-full py-3 rounded-xl font-bold text-xs sm:text-sm shadow-md transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2 ${
+                selectedRole === 'guru_kelas'
+                  ? 'bg-blue-700 hover:bg-blue-800 text-white ring-2 ring-blue-500/30'
+                  : 'bg-emerald-700 hover:bg-emerald-800 text-white'
+              }`}
             >
               {isLoading ? (
                 'Memverifikasi...'
@@ -274,7 +278,9 @@ export const LoginView: React.FC = () => {
               ) : selectedRole === 'pembina' ? (
                 'Masuk sebagai Pembina'
               ) : (
-                `Masuk sebagai Guru ${selectedClass.toLowerCase().startsWith('kelas') ? selectedClass : `Kelas ${selectedClass}`}`
+                <span className="flex items-center gap-1.5">
+                  Masuk sebagai <strong className="underline underline-offset-2">Guru {selectedClass.toLowerCase().startsWith('kelas') ? selectedClass : `Kelas ${selectedClass}`}</strong>
+                </span>
               )}
               <ArrowRight className="w-4 h-4" />
             </button>

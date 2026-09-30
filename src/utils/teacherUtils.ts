@@ -155,17 +155,48 @@ export function getEffectiveTeacherDuties(
 }
 
 /**
+ * Infers gender ('L' or 'P') from a teacher's name or title if gender is not explicitly specified.
+ */
+export function inferGenderFromName(name: string): 'L' | 'P' {
+  const lower = (name || '').toLowerCase().trim();
+  if (
+    lower.startsWith('ibu') ||
+    lower.startsWith('hj.') ||
+    lower.startsWith('hj ') ||
+    lower.startsWith('dra.') ||
+    lower.includes(' ratna') ||
+    lower.includes(' siti') ||
+    lower.includes(' nurul') ||
+    lower.includes(' tri') ||
+    lower.includes(' sri') ||
+    lower.includes(' dian') ||
+    lower.includes(' maya') ||
+    lower.includes('safitri') ||
+    lower.includes('kusuma') ||
+    lower.includes('dewi') ||
+    lower.includes('aminah') ||
+    lower.includes('hidayah') ||
+    lower.includes('wahyuni') ||
+    lower.includes('rahayu')
+  ) {
+    return 'P';
+  }
+  return 'L';
+}
+
+/**
  * Generates an avatar URL for a teacher/coach that strictly respects gender.
  * For Perempuan (P): Generates feminine styles (including hijab & elegant long styles) with zero facial hair.
  * For Laki-laki (L): Generates neat masculine hairstyles and professional styles.
  */
 export function getTeacherAvatarUrl(
-  gender: 'L' | 'P' | undefined = 'L',
+  gender?: 'L' | 'P',
   seed: string = 'guru'
 ): string {
+  const effectiveGender = gender || inferGenderFromName(seed);
   const cleanSeed = encodeURIComponent(seed.trim() || 'guru');
 
-  if (gender === 'P') {
+  if (effectiveGender === 'P') {
     const femaleTops = [
       'hijab',
       'longHair',
@@ -194,7 +225,31 @@ export function getTeacherAvatarUrl(
       'shortHairShortCurly'
     ].join(',');
 
-    return `https://api.dicebear.com/7.x/avataaars/svg?seed=bapak_${cleanSeed}&top=${maleTops}`;
+    return `https://api.dicebear.com/7.x/avataaars/svg?seed=bapak_${cleanSeed}&top=${maleTops}&facialHairProbability=0`;
   }
+}
+
+/**
+ * Ensures a teacher's avatar URL is valid and strictly matches their gender.
+ * Fixes mismatched legacy avatar URLs.
+ */
+export function getValidTeacherAvatarUrl(teacher: {
+  gender?: 'L' | 'P';
+  fullName?: string;
+  avatarUrl?: string;
+}): string {
+  const gender = teacher.gender || inferGenderFromName(teacher.fullName || '');
+
+  // If no avatar URL provided, generate gender-matching avatar
+  if (!teacher.avatarUrl) {
+    return getTeacherAvatarUrl(gender, teacher.fullName);
+  }
+
+  // Detect mismatched female Unsplash portrait on male teacher
+  if (gender === 'L' && teacher.avatarUrl.includes('photo-1534528741775-53994a69daeb')) {
+    return 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=150&auto=format&fit=crop&q=80';
+  }
+
+  return teacher.avatarUrl;
 }
 

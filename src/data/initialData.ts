@@ -107,7 +107,7 @@ export const initialTeachers: Teacher[] = [
     gender: 'L',
     position: 'Kepala Sekolah',
     additionalDuties: 'Penanggung Jawab Utama Program SEKAR TALENTA',
-    avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+    avatarUrl: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=150&auto=format&fit=crop&q=80',
     isActive: true,
     createdAt: '2024-07-01T08:00:00Z',
     updatedAt: '2024-07-01T08:00:00Z'

@@ -7,7 +7,7 @@ import { ConfirmDialog } from '../common/ConfirmDialog';
 import { TeacherFormModal } from './TeacherFormModal';
 import { TeacherDetailModal } from './TeacherDetailModal';
 import { TeacherCsvImportModal } from './TeacherCsvImportModal';
-import { getEffectiveTeacherDuties, getTeacherAvatarUrl } from '../../utils/teacherUtils';
+import { getEffectiveTeacherDuties } from '../../utils/teacherUtils';
 import {
   GraduationCap,
   Plus,
@@ -464,16 +464,11 @@ export const TeacherListView: React.FC = () => {
                       {/* Nama & Asal Pendidik */}
                       <td className="p-4">
                         <div className="flex items-center gap-3">
-                          <img
-                            src={
-                              teacher.avatarUrl ||
-                              getTeacherAvatarUrl(teacher.gender, teacher.fullName)
-                            }
-                            alt=""
-                            className={`w-10 h-10 rounded-xl object-cover p-0.5 border flex-shrink-0 ${
-                              isExternal ? 'border-purple-300 bg-purple-50' : 'border-slate-200 bg-slate-100'
-                            }`}
-                          />
+                          <div className={`w-9 h-9 rounded-xl flex items-center justify-center font-bold flex-shrink-0 border ${
+                            isExternal ? 'bg-purple-100/80 text-purple-800 border-purple-200' : 'bg-emerald-100/80 text-emerald-800 border-emerald-200'
+                          }`}>
+                            {isExternal ? <Globe2 className="w-4 h-4 text-purple-700" /> : <GraduationCap className="w-4 h-4 text-emerald-700" />}
+                          </div>
                           <div>
                             <div className="flex items-center gap-2">
                               <p className={`font-bold transition-colors ${
