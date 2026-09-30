@@ -72,7 +72,7 @@ export const DashboardCharts: React.FC = () => {
       name: e.name.length > 12 ? e.name.substring(0, 12) + '...' : e.name,
       fullName: e.name,
       peserta: memberCount,
-      kapasitas: e.capacity || 30
+      kapasitas: e.capacity || 500
     };
   });
 

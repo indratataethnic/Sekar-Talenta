@@ -26,7 +26,7 @@ export const LoginView: React.FC = () => {
   // Selected educator role for login with password
   const [selectedRole, setSelectedRole] = useState<'super_admin' | 'guru_kelas' | 'pembina'>('super_admin');
   const [selectedClass, setSelectedClass] = useState<string>('Kelas 4A');
-  const [password, setPassword] = useState('sekarmelati');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errMsg, setErrMsg] = useState('');
@@ -168,7 +168,11 @@ export const LoginView: React.FC = () => {
                     <button
                       type="button"
                       key={r.id}
-                      onClick={() => setSelectedRole(r.id)}
+                      onClick={() => {
+                        setSelectedRole(r.id);
+                        setPassword('');
+                        setErrMsg('');
+                      }}
                       className={`p-3 rounded-2xl border text-left transition-all flex items-center justify-between ${
                         isSelected
                           ? 'border-emerald-600 bg-emerald-50 text-emerald-950 ring-2 ring-emerald-500/20 shadow-xs font-bold'
@@ -222,6 +226,7 @@ export const LoginView: React.FC = () => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Masukkan kata sandi..."
+                  autoComplete="current-password"
                   className="w-full pl-9 pr-9 py-2.5 text-xs rounded-xl border border-slate-300 focus:outline-emerald-600 focus:border-emerald-600 font-medium"
                 />
                 <button

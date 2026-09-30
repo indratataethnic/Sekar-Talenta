@@ -3,7 +3,7 @@ import { Teacher } from '../../types';
 import { Modal } from '../common/Modal';
 import { UserCheck, RefreshCw, Award, Briefcase, Hash, Sparkles, Trophy, Flag, Info, Building2, Globe2, School } from 'lucide-react';
 import { useData } from '../../context/DataContext';
-import { getDetectedTeacherDutiesBreakdown } from '../../utils/teacherUtils';
+import { getDetectedTeacherDutiesBreakdown, getTeacherAvatarUrl } from '../../utils/teacherUtils';
 
 interface TeacherFormModalProps {
   isOpen: boolean;
@@ -152,15 +152,21 @@ export const TeacherFormModal: React.FC<TeacherFormModalProps> = ({
     setAvatarSeed(newSeed);
     setFormData((prev) => ({
       ...prev,
-      avatarUrl: `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(newSeed)}`
+      avatarUrl: getTeacherAvatarUrl(prev.gender, newSeed)
+    }));
+  };
+
+  const handleGenderChange = (newGender: 'L' | 'P') => {
+    setFormData((prev) => ({
+      ...prev,
+      gender: newGender,
+      avatarUrl: getTeacherAvatarUrl(newGender, avatarSeed || prev.fullName || 'guru')
     }));
   };
 
   const currentAvatarPreview =
     formData.avatarUrl ||
-    `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(
-      formData.fullName || avatarSeed || 'teacher'
-    )}`;
+    getTeacherAvatarUrl(formData.gender, formData.fullName || avatarSeed || 'teacher');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -300,7 +306,7 @@ export const TeacherFormModal: React.FC<TeacherFormModalProps> = ({
                   type="radio"
                   name="teacherGender"
                   checked={formData.gender === 'L'}
-                  onChange={() => setFormData({ ...formData, gender: 'L' })}
+                  onChange={() => handleGenderChange('L')}
                   className="text-blue-600 focus:ring-blue-500"
                 />
                 <span>👨 Laki-laki (L)</span>
@@ -317,7 +323,7 @@ export const TeacherFormModal: React.FC<TeacherFormModalProps> = ({
                   type="radio"
                   name="teacherGender"
                   checked={formData.gender === 'P'}
-                  onChange={() => setFormData({ ...formData, gender: 'P' })}
+                  onChange={() => handleGenderChange('P')}
                   className="text-rose-600 focus:ring-rose-500"
                 />
                 <span>👩 Perempuan (P)</span>

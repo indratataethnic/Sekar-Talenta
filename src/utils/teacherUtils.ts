@@ -153,3 +153,48 @@ export function getEffectiveTeacherDuties(
 
   return combined.join(', ');
 }
+
+/**
+ * Generates an avatar URL for a teacher/coach that strictly respects gender.
+ * For Perempuan (P): Generates feminine styles (including hijab & elegant long styles) with zero facial hair.
+ * For Laki-laki (L): Generates neat masculine hairstyles and professional styles.
+ */
+export function getTeacherAvatarUrl(
+  gender: 'L' | 'P' | undefined = 'L',
+  seed: string = 'guru'
+): string {
+  const cleanSeed = encodeURIComponent(seed.trim() || 'guru');
+
+  if (gender === 'P') {
+    const femaleTops = [
+      'hijab',
+      'longHair',
+      'longHairBigHair',
+      'longHairBob',
+      'longHairBun',
+      'longHairCurly',
+      'longHairCurvy',
+      'longHairMiaWallace',
+      'longHairNotTooLong',
+      'longHairStraight',
+      'longHairStraight2',
+      'longHairStraightStrand'
+    ].join(',');
+
+    return `https://api.dicebear.com/7.x/avataaars/svg?seed=ibu_${cleanSeed}&top=${femaleTops}&facialHairProbability=0`;
+  } else {
+    const maleTops = [
+      'shortHair',
+      'shortHairShortFlat',
+      'shortHairShortRound',
+      'shortHairShortWaved',
+      'shortHairSides',
+      'shortHairTheCaesar',
+      'shortHairTheCaesarSidePart',
+      'shortHairShortCurly'
+    ].join(',');
+
+    return `https://api.dicebear.com/7.x/avataaars/svg?seed=bapak_${cleanSeed}&top=${maleTops}`;
+  }
+}
+

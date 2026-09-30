@@ -48,7 +48,7 @@ export const ExtracurricularFormModal: React.FC<ExtracurricularFormModalProps> =
   const [description, setDescription] = useState('');
   const [dayTimeSchedule, setDayTimeSchedule] = useState('Jumat, 14.00 - 15.30 WIB');
   const [location, setLocation] = useState('Ruang Serbaguna');
-  const [capacity, setCapacity] = useState(30);
+  const [capacity, setCapacity] = useState(500);
   const [goalsText, setGoalsText] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const [coaches, setCoaches] = useState<ExtracurricularCoach[]>([
@@ -72,7 +72,7 @@ export const ExtracurricularFormModal: React.FC<ExtracurricularFormModalProps> =
       setDescription(ekskulToEdit.description || '');
       setDayTimeSchedule(ekskulToEdit.dayTimeSchedule || 'Jumat, 14.00 - 15.30 WIB');
       setLocation(ekskulToEdit.location || 'Ruang Serbaguna');
-      setCapacity(ekskulToEdit.capacity || 30);
+      setCapacity(ekskulToEdit.capacity || 500);
       setGoalsText(Array.isArray(ekskulToEdit.goals) ? ekskulToEdit.goals.join('\n') : '');
 
       if (Array.isArray(ekskulToEdit.coaches) && ekskulToEdit.coaches.length > 0) {
@@ -133,7 +133,7 @@ export const ExtracurricularFormModal: React.FC<ExtracurricularFormModalProps> =
       setDescription('');
       setDayTimeSchedule('Jumat, 14.00 - 15.30 WIB');
       setLocation('Ruang Serbaguna');
-      setCapacity(30);
+      setCapacity(500);
       setGoalsText('');
       setCoaches([
         {
@@ -237,7 +237,7 @@ export const ExtracurricularFormModal: React.FC<ExtracurricularFormModalProps> =
           coachPhone: primaryPhone,
           dayTimeSchedule: dayTimeSchedule.trim(),
           location: location.trim(),
-          capacity: Number(capacity) || 30,
+          capacity: Number(capacity) || 500,
           goals: goalsList
         });
       } else {
@@ -253,7 +253,7 @@ export const ExtracurricularFormModal: React.FC<ExtracurricularFormModalProps> =
           coachPhone: primaryPhone,
           dayTimeSchedule: dayTimeSchedule.trim(),
           location: location.trim(),
-          capacity: Number(capacity) || 30,
+          capacity: Number(capacity) || 500,
           goals: goalsList,
           isActive: true
         });
@@ -346,7 +346,7 @@ export const ExtracurricularFormModal: React.FC<ExtracurricularFormModalProps> =
               <input
                 type="number"
                 min={5}
-                max={200}
+                max={1000}
                 value={capacity}
                 onChange={(e) => setCapacity(Number(e.target.value))}
                 className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 focus:outline-emerald-600 bg-white"

@@ -165,7 +165,7 @@ export const ExtracurricularListView: React.FC = () => {
                 (m.extracurricularName && ekskul.name && m.extracurricularName.toLowerCase().trim().includes(ekskul.name.toLowerCase().trim())) ||
                 (m.extracurricularName && ekskul.name && ekskul.name.toLowerCase().trim().includes(m.extracurricularName.toLowerCase().trim()))
             );
-            const capacity = ekskul.capacity || 30;
+            const capacity = ekskul.capacity || 500;
             const capacityPercent = Math.min(100, Math.round((members.length / capacity) * 100));
 
             const coachList =

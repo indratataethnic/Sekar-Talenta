@@ -103,7 +103,7 @@ export const ExtracurricularRegisterModal: React.FC<ExtracurricularRegisterModal
       title={`Pendaftaran ${activeEkskul ? activeEkskul.name : 'Ekstrakurikuler'}`}
       subtitle={
         activeEkskul
-          ? `Kapasitas: ${currentMembers.length}/${activeEkskul.capacity || 30} Murid Terdaftar`
+          ? `Kapasitas: ${currentMembers.length}/${activeEkskul.capacity || 500} Murid Terdaftar`
           : 'Pilih murid dan ekstrakurikuler'
       }
       maxWidth="md"
@@ -138,7 +138,7 @@ export const ExtracurricularRegisterModal: React.FC<ExtracurricularRegisterModal
                   const mCount = extracurricularMembers.filter((m) => m.extracurricularId === ek.id && m.status === 'aktif').length;
                   return (
                     <option key={ek.id} value={ek.id}>
-                      {ek.name} ({ek.category}) • {mCount}/{ek.capacity || 30} Peserta
+                      {ek.name} ({ek.category}) • {mCount}/{ek.capacity || 500} Peserta
                     </option>
                   );
                 })}

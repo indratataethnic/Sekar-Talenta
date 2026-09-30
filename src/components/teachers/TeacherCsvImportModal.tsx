@@ -3,6 +3,7 @@ import { Modal } from '../common/Modal';
 import { Upload, Download, CheckCircle2, AlertCircle, FileText, Globe2, School } from 'lucide-react';
 import { useData } from '../../context/DataContext';
 import { Teacher } from '../../types';
+import { getTeacherAvatarUrl } from '../../utils/teacherUtils';
 
 interface TeacherCsvImportModalProps {
   isOpen: boolean;
@@ -112,7 +113,7 @@ export const TeacherCsvImportModal: React.FC<TeacherCsvImportModalProps> = ({ is
           nip: (nip && nip !== '-') ? nip : undefined,
           position,
           additionalDuties: (additionalDuties && additionalDuties !== '-') ? additionalDuties : undefined,
-          avatarUrl: `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(fullName)}`,
+          avatarUrl: getTeacherAvatarUrl(gender, fullName),
           isActive: true
         });
       }

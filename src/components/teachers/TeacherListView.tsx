@@ -7,7 +7,7 @@ import { ConfirmDialog } from '../common/ConfirmDialog';
 import { TeacherFormModal } from './TeacherFormModal';
 import { TeacherDetailModal } from './TeacherDetailModal';
 import { TeacherCsvImportModal } from './TeacherCsvImportModal';
-import { getEffectiveTeacherDuties } from '../../utils/teacherUtils';
+import { getEffectiveTeacherDuties, getTeacherAvatarUrl } from '../../utils/teacherUtils';
 import {
   GraduationCap,
   Plus,
@@ -467,9 +467,7 @@ export const TeacherListView: React.FC = () => {
                           <img
                             src={
                               teacher.avatarUrl ||
-                              `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(
-                                teacher.fullName
-                              )}`
+                              getTeacherAvatarUrl(teacher.gender, teacher.fullName)
                             }
                             alt=""
                             className={`w-10 h-10 rounded-xl object-cover p-0.5 border flex-shrink-0 ${

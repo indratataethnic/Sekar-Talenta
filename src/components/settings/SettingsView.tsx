@@ -627,7 +627,7 @@ export const SettingsView: React.FC = () => {
                       </td>
                       <td className="p-3.5">
                         <span className="font-mono text-xs font-semibold px-2 py-1 bg-slate-100 rounded-lg text-slate-800 border border-slate-200">
-                          {u.role === 'murid' ? 'Bebas Akses (Tanpa Password)' : (u.password || 'sekarmelati')}
+                          {u.role === 'murid' ? 'Bebas Akses (Tanpa Password)' : '•••••••• (Tersimpan Aman)'}
                         </span>
                       </td>
                       <td className="p-3.5 text-right">

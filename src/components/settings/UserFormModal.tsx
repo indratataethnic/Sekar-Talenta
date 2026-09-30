@@ -3,6 +3,7 @@ import { Modal } from '../common/Modal';
 import { User, UserRole } from '../../types';
 import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
+import { Eye, EyeOff } from 'lucide-react';
 
 interface UserFormModalProps {
   isOpen: boolean;
@@ -20,6 +21,7 @@ export const UserFormModal: React.FC<UserFormModalProps> = ({
 
   const [role, setRole] = useState<UserRole>('guru_kelas');
   const [password, setPassword] = useState('sekarmelati');
+  const [showPassword, setShowPassword] = useState(false);
   const [assignedClass, setAssignedClass] = useState('Kelas 4A');
   const [assignedAmbassadorType, setAssignedAmbassadorType] = useState('duta_tppk');
   const [assignedExtracurricularId, setAssignedExtracurricularId] = useState(extracurriculars[0]?.id || 'ekskul_tahfidz');
@@ -194,14 +196,24 @@ export const UserFormModal: React.FC<UserFormModalProps> = ({
             <label className="block text-xs font-bold text-slate-700 mb-1">
               Kata Sandi (Password) *
             </label>
-            <input
-              type="text"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Masukkan kata sandi..."
-              className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 focus:outline-emerald-600 font-mono font-bold"
-            />
+            <div className="relative">
+              <input
+                type={showPassword ? 'text' : 'password'}
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Masukkan kata sandi..."
+                autoComplete="new-password"
+                className="w-full pl-3 pr-9 py-2 text-xs rounded-xl border border-slate-300 focus:outline-emerald-600 font-mono font-bold"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="p-1 text-slate-400 hover:text-slate-600 absolute right-2.5 top-1/2 -translate-y-1/2"
+              >
+                {showPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+              </button>
+            </div>
           </div>
 
           {/* Status */}

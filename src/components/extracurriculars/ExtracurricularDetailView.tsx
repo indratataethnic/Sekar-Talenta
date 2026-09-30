@@ -67,7 +67,7 @@ export const ExtracurricularDetailView: React.FC<ExtracurricularDetailViewProps>
     ach.category.toLowerCase().includes(extracurricular.name.toLowerCase())
   );
 
-  const capacity = extracurricular.capacity || 30;
+  const capacity = extracurricular.capacity || 500;
   const capacityPercent = Math.min(100, Math.round((members.length / capacity) * 100));
 
   const coachList: ExtracurricularCoach[] =

@@ -551,7 +551,7 @@ export const initialExtracurriculars: Extracurricular[] = [
     coachPhone: '081298765411',
     dayTimeSchedule: 'Selasa & Kamis, 14.30 - 16.00 WIB',
     location: 'Musholla As-Salam SDN Karanganyar',
-    capacity: 35,
+    capacity: 500,
     requirements: 'Sudah lancar membaca iqro jilid 4 atau Al-Qur\'an dasar',
     isActive: true
   },
@@ -579,7 +579,7 @@ export const initialExtracurriculars: Extracurricular[] = [
     coachPhone: '081344556677',
     dayTimeSchedule: 'Senin & Rabu, 14.30 - 15.45 WIB',
     location: 'Ruang Agama Islam',
-    capacity: 40,
+    capacity: 500,
     isActive: true
   },
   {
@@ -613,7 +613,7 @@ export const initialExtracurriculars: Extracurricular[] = [
     coachPhone: '085611223344',
     dayTimeSchedule: 'Jumat, 13.30 - 15.30 WIB',
     location: 'Halaman Utama & Aula Sekolah',
-    capacity: 120,
+    capacity: 500,
     isActive: true
   },
   {
@@ -648,7 +648,7 @@ export const initialExtracurriculars: Extracurricular[] = [
     coachPhone: '087812345678',
     dayTimeSchedule: 'Rabu, 14.00 - 15.30 WIB',
     location: 'Laboratorium Komputer & Digital SDN Karanganyar',
-    capacity: 25,
+    capacity: 500,
     requirements: 'Murid Kelas 3 s/d Kelas 6',
     isActive: true
   },
@@ -684,7 +684,7 @@ export const initialExtracurriculars: Extracurricular[] = [
     coachPhone: '082155667788',
     dayTimeSchedule: 'Sabtu, 08.00 - 10.00 WIB',
     location: 'Ruang Prakarya Seni',
-    capacity: 25,
+    capacity: 500,
     isActive: true
   },
   {
@@ -719,7 +719,7 @@ export const initialExtracurriculars: Extracurricular[] = [
     coachPhone: '085733445566',
     dayTimeSchedule: 'Kamis, 15.30 - 17.00 WIB',
     location: 'Aula Karanganyar',
-    capacity: 30,
+    capacity: 500,
     isActive: true
   },
   {
@@ -753,7 +753,7 @@ export const initialExtracurriculars: Extracurricular[] = [
     coachPhone: '081987654321',
     dayTimeSchedule: 'Selasa & Jumat Pagi, 06.00 - 07.00 WIB',
     location: 'Lapangan Olahraga SDN Karanganyar',
-    capacity: 30,
+    capacity: 500,
     isActive: true
   },
   {
@@ -788,7 +788,7 @@ export const initialExtracurriculars: Extracurricular[] = [
     coachPhone: '085233112233',
     dayTimeSchedule: 'Sabtu, 08.00 - 10.00 WIB',
     location: 'Panggung Terbuka SDN Karanganyar',
-    capacity: 25,
+    capacity: 500,
     isActive: true
   }
 ];

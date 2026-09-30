@@ -4,7 +4,7 @@ import { Modal } from '../common/Modal';
 import { Badge } from '../common/Badge';
 import { Briefcase, Award, Hash, Calendar, Sparkles, Flag, Trophy, Building2, Globe2, School } from 'lucide-react';
 import { useData } from '../../context/DataContext';
-import { getEffectiveTeacherDuties, getDetectedTeacherDutiesBreakdown } from '../../utils/teacherUtils';
+import { getEffectiveTeacherDuties, getDetectedTeacherDutiesBreakdown, getTeacherAvatarUrl } from '../../utils/teacherUtils';
 
 interface TeacherDetailModalProps {
   isOpen: boolean;
@@ -45,7 +45,7 @@ export const TeacherDetailModal: React.FC<TeacherDetailModalProps> = ({
           <img
             src={
               teacher.avatarUrl ||
-              `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(teacher.fullName)}`
+              getTeacherAvatarUrl(teacher.gender, teacher.fullName)
             }
             alt={teacher.fullName}
             className={`w-18 h-18 rounded-2xl object-cover bg-white/10 p-1 border-2 shadow-md flex-shrink-0 ${
