@@ -16,15 +16,16 @@ export const TeacherCsvImportModal: React.FC<TeacherCsvImportModalProps> = ({ is
   const [isProcessing, setIsProcessing] = useState(false);
   const [resultMsg, setResultMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
-  const sampleTemplate = `No,Nama Guru / Pembina,Tipe (Internal/Eksternal),Asal Lembaga / Sanggar,NIP / ID Lisensi,Jabatan / Peran,Tugas Tambahan
-1,H. Sudarsono S.Pd. M.M.,Internal,-,19680512 199303 1 008,Kepala Sekolah,Penanggung Jawab Utama Program SEKAR TALENTA
-2,Indartha Meiputra S.Pd.,Internal,-,19850114 200902 1 003,Guru Penggerak & IT,Koordinator Inovasi SEKAR TALENTA
-3,Ibu Ratna Dewi S.Pd.,Internal,-,19870420 201001 2 015,Guru Kelas 4 A,Koordinator P5
-4,Kak Dimas Prasetya S.Sn.,Eksternal,Sanggar Seni Tari Suropati Pasuruan,LIS-TARI-01,Instruktur & Koreografer Seni Tari,Pembina Tari Tradisional
-5,Sensei Budi Santoso,Eksternal,Dojo Bela Diri Karanganyar,LIS-BD-02,Pelatih Bela Diri Karate & Silat,Pelatih O2SN Karate`;
+  const sampleTemplate = `No,Nama Guru / Pembina,Jenis Kelamin (L/P),Tipe (Internal/Eksternal),Asal Lembaga / Sanggar,NIP / ID Lisensi,Jabatan / Peran,Tugas Tambahan
+1,H. Sudarsono S.Pd. M.M.,L,Internal,-,19680512 199303 1 008,Kepala Sekolah,Penanggung Jawab Utama Program SEKAR TALENTA
+2,Indartha Meiputra S.Pd.,L,Internal,-,19850114 200902 1 003,Guru Penggerak & IT,Koordinator Inovasi SEKAR TALENTA
+3,Ibu Ratna Dewi S.Pd.,P,Internal,-,19870420 201001 2 015,Guru Kelas 4 A,Koordinator P5
+4,Kak Dimas Prasetya S.Sn.,L,Eksternal,Sanggar Seni Tari Suropati Pasuruan,LIS-TARI-01,Instruktur & Koreografer Seni Tari,Pembina Tari Tradisional
+5,Sensei Budi Santoso,L,Eksternal,Dojo Bela Diri Karanganyar,LIS-BD-02,Pelatih Bela Diri Karate & Silat,Pelatih O2SN Karate`;
 
   const handleDownloadTemplate = () => {
-    const blob = new Blob([sampleTemplate], { type: 'text/csv;charset=utf-8;' });
+    // Add UTF-8 BOM for Microsoft Excel compatibility
+    const blob = new Blob(['\uFEFF' + sampleTemplate], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
@@ -49,6 +50,7 @@ export const TeacherCsvImportModal: React.FC<TeacherCsvImportModalProps> = ({ is
       header.findIndex((h) => keywords.some((k) => h.includes(k)));
 
     const nameIdx = findIndex(['nama guru', 'nama pembina', 'nama']);
+    const genderIdx = findIndex(['jenis kelamin', 'kelamin', 'gender', 'l/p', 'jk', 'sex']);
     const typeIdx = findIndex(['tipe', 'kategori', 'jenis']);
     const orgIdx = findIndex(['asal lembaga', 'sanggar', 'klub', 'lembaga', 'instansi']);
     const nipIdx = findIndex(['nip', 'nuptk', 'id', 'lisensi']);
@@ -75,6 +77,23 @@ export const TeacherCsvImportModal: React.FC<TeacherCsvImportModalProps> = ({ is
       row.push(cur.trim());
 
       const fullName = (nameIdx !== -1 ? row[nameIdx] : row[1])?.replace(/^"|"$/g, '').trim();
+
+      // Parse gender
+      let gender: 'L' | 'P' = 'L';
+      if (genderIdx !== -1 && row[genderIdx]) {
+        const rawGender = row[genderIdx].replace(/^"|"$/g, '').trim().toUpperCase();
+        if (rawGender.startsWith('P') || rawGender.includes('PEREMPUAN') || rawGender.includes('WANITA') || rawGender.includes('FEMALE')) {
+          gender = 'P';
+        } else {
+          gender = 'L';
+        }
+      } else if (fullName) {
+        const lowerName = fullName.toLowerCase();
+        if (lowerName.startsWith('ibu') || lowerName.startsWith('bu ') || lowerName.startsWith('ustadzah') || lowerName.includes('dewi') || lowerName.includes('siti') || lowerName.includes('rahayu') || lowerName.includes('safitri') || lowerName.includes('kusuma')) {
+          gender = 'P';
+        }
+      }
+
       const rawType = (typeIdx !== -1 ? row[typeIdx] : '')?.replace(/^"|"$/g, '').trim().toLowerCase();
       const isExternal = rawType.includes('eksternal') || rawType.includes('luar') || rawType.includes('external');
       const teacherType: 'internal' | 'external' = isExternal ? 'external' : 'internal';
@@ -87,6 +106,7 @@ export const TeacherCsvImportModal: React.FC<TeacherCsvImportModalProps> = ({ is
       if (fullName) {
         parsedTeachers.push({
           fullName,
+          gender,
           teacherType,
           organization: (isExternal && organization && organization !== '-') ? organization : undefined,
           nip: (nip && nip !== '-') ? nip : undefined,
@@ -167,7 +187,7 @@ export const TeacherCsvImportModal: React.FC<TeacherCsvImportModalProps> = ({ is
               <FileText className="w-4 h-4 text-emerald-700" /> Format Kolom CSV Fleksibel
             </h4>
             <p className="text-[11px] text-slate-600">
-              Format kolom: <strong>No, Nama, Tipe (Internal/Eksternal), Asal Lembaga, NIP/ID, Jabatan, Tugas Tambahan</strong>
+              Format kolom: <strong>No, Nama, Jenis Kelamin (L/P), Tipe (Internal/Eksternal), Asal Lembaga, NIP/ID, Jabatan, Tugas Tambahan</strong>
             </p>
           </div>
           <button
@@ -234,6 +254,7 @@ export const TeacherCsvImportModal: React.FC<TeacherCsvImportModalProps> = ({ is
                   <tr>
                     <th className="p-2.5">No</th>
                     <th className="p-2.5">Nama</th>
+                    <th className="p-2.5">L/P</th>
                     <th className="p-2.5">Tipe</th>
                     <th className="p-2.5">Asal Lembaga</th>
                     <th className="p-2.5">Jabatan / Peran</th>
@@ -247,6 +268,15 @@ export const TeacherCsvImportModal: React.FC<TeacherCsvImportModalProps> = ({ is
                       <tr key={idx} className="hover:bg-slate-50">
                         <td className="p-2.5 text-slate-500 font-bold">{idx + 1}</td>
                         <td className="p-2.5 font-bold text-slate-900">{t.fullName}</td>
+                        <td className="p-2.5">
+                          <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
+                            t.gender === 'P'
+                              ? 'bg-rose-100 text-rose-800 border border-rose-200'
+                              : 'bg-blue-100 text-blue-800 border border-blue-200'
+                          }`}>
+                            {t.gender === 'P' ? 'P' : 'L'}
+                          </span>
+                        </td>
                         <td className="p-2.5">
                           {isExt ? (
                             <span className="px-1.5 py-0.5 rounded bg-purple-100 text-purple-800 text-[10px] font-bold">

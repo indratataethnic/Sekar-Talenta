@@ -87,6 +87,20 @@ export const TeacherDetailModal: React.FC<TeacherDetailModalProps> = ({
             </div>
           )}
 
+          {/* Jenis Kelamin */}
+          <div className="py-2.5 flex items-center justify-between">
+            <span className="text-slate-500 flex items-center gap-1.5 font-medium">
+              <span className="text-xs">⚧</span> Jenis Kelamin
+            </span>
+            <span className={`font-bold px-2 py-0.5 rounded-lg border text-xs flex items-center gap-1 ${
+              teacher.gender === 'P'
+                ? 'text-rose-700 bg-rose-50 border-rose-200'
+                : 'text-blue-700 bg-blue-50 border-blue-200'
+            }`}>
+              {teacher.gender === 'P' ? '👩 Perempuan (P)' : '👨 Laki-laki (L)'}
+            </span>
+          </div>
+
           {/* NIP / No. Identitas */}
           <div className="py-2.5 flex items-center justify-between">
             <span className="text-slate-500 flex items-center gap-1.5 font-medium">

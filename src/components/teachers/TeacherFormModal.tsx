@@ -72,8 +72,17 @@ export const TeacherFormModal: React.FC<TeacherFormModalProps> = ({
   const [teacherType, setTeacherType] = useState<'internal' | 'external'>('internal');
   const [organization, setOrganization] = useState('');
 
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<{
+    fullName: string;
+    gender: 'L' | 'P';
+    nip: string;
+    position: string;
+    additionalDuties: string;
+    avatarUrl: string;
+    isActive: boolean;
+  }>({
     fullName: '',
+    gender: 'L',
     nip: '',
     position: 'Guru Kelas 4 A',
     additionalDuties: '',
@@ -91,6 +100,7 @@ export const TeacherFormModal: React.FC<TeacherFormModalProps> = ({
       setOrganization(teacherToEdit.organization || '');
       setFormData({
         fullName: teacherToEdit.fullName,
+        gender: teacherToEdit.gender || 'L',
         nip: teacherToEdit.nip || '',
         position: teacherToEdit.position,
         additionalDuties: teacherToEdit.additionalDuties || '',
@@ -106,6 +116,7 @@ export const TeacherFormModal: React.FC<TeacherFormModalProps> = ({
       setOrganization('');
       setFormData({
         fullName: '',
+        gender: 'L',
         nip: '',
         position: 'Guru Kelas 1 A',
         additionalDuties: '',
@@ -159,6 +170,7 @@ export const TeacherFormModal: React.FC<TeacherFormModalProps> = ({
     try {
       const payload: Omit<Teacher, 'id' | 'createdAt' | 'updatedAt'> = {
         fullName: formData.fullName.trim(),
+        gender: formData.gender,
         nip: formData.nip.trim() || undefined,
         position: formData.position.trim(),
         additionalDuties: formData.additionalDuties.trim() || undefined,
@@ -268,6 +280,48 @@ export const TeacherFormModal: React.FC<TeacherFormModalProps> = ({
                 className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-slate-300 text-xs focus:outline-emerald-600 focus:border-emerald-600 font-medium"
               />
               <UserCheck className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+            </div>
+          </div>
+
+          {/* Jenis Kelamin */}
+          <div className="sm:col-span-2">
+            <label className="block text-xs font-bold text-slate-700 mb-1.5">
+              Jenis Kelamin <span className="text-rose-500">*</span>
+            </label>
+            <div className="grid grid-cols-2 gap-2">
+              <label
+                className={`flex items-center justify-center gap-2 py-2 px-3 rounded-xl border cursor-pointer text-xs font-bold transition-all ${
+                  formData.gender === 'L'
+                    ? 'bg-blue-50 border-blue-500 text-blue-800 shadow-2xs'
+                    : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="teacherGender"
+                  checked={formData.gender === 'L'}
+                  onChange={() => setFormData({ ...formData, gender: 'L' })}
+                  className="text-blue-600 focus:ring-blue-500"
+                />
+                <span>👨 Laki-laki (L)</span>
+              </label>
+
+              <label
+                className={`flex items-center justify-center gap-2 py-2 px-3 rounded-xl border cursor-pointer text-xs font-bold transition-all ${
+                  formData.gender === 'P'
+                    ? 'bg-rose-50 border-rose-400 text-rose-800 shadow-2xs'
+                    : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="teacherGender"
+                  checked={formData.gender === 'P'}
+                  onChange={() => setFormData({ ...formData, gender: 'P' })}
+                  className="text-rose-600 focus:ring-rose-500"
+                />
+                <span>👩 Perempuan (P)</span>
+              </label>
             </div>
           </div>
 

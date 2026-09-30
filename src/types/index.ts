@@ -66,6 +66,7 @@ export interface Teacher {
   id: string;
   nip?: string;
   fullName: string;
+  gender?: 'L' | 'P';
   position: string; // Jabatan (e.g. Kepala Sekolah, Guru Kelas 1 A, Pelatih Seni Tari, dll.)
   additionalDuties?: string; // Tugas Tambahan (e.g. Pembina Duta TPPK, Pembina Pramuka, Koordinator UKS, dll.)
   avatarUrl?: string;

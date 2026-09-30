@@ -35,6 +35,7 @@ export const TeacherListView: React.FC = () => {
   // Search & Filter States
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState<'ALL' | 'internal' | 'external'>('ALL');
+  const [genderFilter, setGenderFilter] = useState<'ALL' | 'L' | 'P'>('ALL');
   const [positionFilter, setPositionFilter] = useState('ALL');
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [currentPage, setCurrentPage] = useState(1);
@@ -90,6 +91,9 @@ export const TeacherListView: React.FC = () => {
         (teacher.effectiveDuties &&
           teacher.effectiveDuties.toLowerCase().includes(searchTerm.toLowerCase()));
 
+      const matchGender =
+        genderFilter === 'ALL' || teacher.gender === genderFilter;
+
       const matchPosition =
         positionFilter === 'ALL' || teacher.position === positionFilter;
 
@@ -98,9 +102,9 @@ export const TeacherListView: React.FC = () => {
         (statusFilter === 'ACTIVE' && teacher.isActive) ||
         (statusFilter === 'INACTIVE' && !teacher.isActive);
 
-      return matchType && matchSearch && matchPosition && matchStatus;
+      return matchType && matchSearch && matchGender && matchPosition && matchStatus;
     });
-  }, [teachersWithDuties, typeFilter, searchTerm, positionFilter, statusFilter]);
+  }, [teachersWithDuties, typeFilter, genderFilter, searchTerm, positionFilter, statusFilter]);
 
   // Pagination
   const totalPages = Math.ceil(filteredTeachers.length / itemsPerPage) || 1;
@@ -133,13 +137,14 @@ export const TeacherListView: React.FC = () => {
     }
   };
 
-  // Export CSV
+  // Export CSV / Excel with UTF-8 BOM
   const handleExportCsv = () => {
     if (teachers.length === 0) return;
 
     const headers = [
       'No',
       'Nama Pendidik/Pembina',
+      'Jenis Kelamin (L/P)',
       'Tipe',
       'Asal Lembaga/Sanggar',
       'NIP/ID Lisensi',
@@ -150,6 +155,7 @@ export const TeacherListView: React.FC = () => {
     const rows = teachersWithDuties.map((t, idx) => [
       idx + 1,
       `"${t.fullName.replace(/"/g, '""')}"`,
+      `"${t.gender === 'P' ? 'Perempuan (P)' : 'Laki-laki (L)'}"`,
       `"${t.teacherType === 'external' ? 'Pembina Luar (Eksternal)' : 'Guru Internal'}"`,
       `"${(t.organization || '-').replace(/"/g, '""')}"`,
       `"${(t.nip || '-').replace(/"/g, '""')}"`,
@@ -158,12 +164,13 @@ export const TeacherListView: React.FC = () => {
       t.isActive ? 'Aktif' : 'Non-Aktif'
     ]);
 
-    const csvContent = [headers.join(','), ...rows.map((r) => r.join(','))].join('\r\n');
+    // Prepend UTF-8 BOM for Microsoft Excel compatibility
+    const csvContent = '\uFEFF' + [headers.join(','), ...rows.map((r) => r.join(','))].join('\r\n');
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.setAttribute('download', `data_guru_dan_pembina_${schoolProfile.npsn}_${new Date().toISOString().slice(0, 10)}.csv`);
+    link.setAttribute('download', `data_guru_dan_pembina_${schoolProfile.npsn || 'upt_sdn_karanganyar'}_${new Date().toISOString().slice(0, 10)}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -348,7 +355,7 @@ export const TeacherListView: React.FC = () => {
       <Card className="p-4 space-y-3 border-slate-200">
         <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
           {/* Search Input */}
-          <div className="sm:col-span-6 relative">
+          <div className="sm:col-span-5 relative">
             <input
               type="text"
               value={searchTerm}
@@ -360,6 +367,22 @@ export const TeacherListView: React.FC = () => {
               className="w-full pl-9 pr-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-emerald-600 font-medium bg-slate-50/50"
             />
             <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+          </div>
+
+          {/* Gender Filter */}
+          <div className="sm:col-span-2">
+            <select
+              value={genderFilter}
+              onChange={(e) => {
+                setGenderFilter(e.target.value as any);
+                setCurrentPage(1);
+              }}
+              className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-emerald-600 font-medium text-slate-700 bg-slate-50/50"
+            >
+              <option value="ALL">Semua L/P</option>
+              <option value="L">👨 Laki-laki (L)</option>
+              <option value="P">👩 Perempuan (P)</option>
+            </select>
           </div>
 
           {/* Position Filter */}
@@ -382,7 +405,7 @@ export const TeacherListView: React.FC = () => {
           </div>
 
           {/* Status Filter */}
-          <div className="sm:col-span-3">
+          <div className="sm:col-span-2">
             <select
               value={statusFilter}
               onChange={(e) => {
@@ -392,14 +415,14 @@ export const TeacherListView: React.FC = () => {
               className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-emerald-600 font-medium text-slate-700 bg-slate-50/50"
             >
               <option value="ALL">Semua Status</option>
-              <option value="ACTIVE">Aktif Membina / Mengajar</option>
-              <option value="INACTIVE">Non-Aktif / Purna</option>
+              <option value="ACTIVE">Aktif Membina</option>
+              <option value="INACTIVE">Non-Aktif</option>
             </select>
           </div>
         </div>
       </Card>
 
-      {/* Main Table: No, Nama Guru/Pembina, Kategori & Asal, Jabatan, Tugas Tambahan, Aksi */}
+      {/* Main Table: No, Nama Guru/Pembina, L/P, Kategori & Asal, Jabatan, Tugas Tambahan, Aksi */}
       <Card className="p-0 overflow-hidden border-slate-200 shadow-xs">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse text-xs">
@@ -407,6 +430,7 @@ export const TeacherListView: React.FC = () => {
               <tr className="bg-slate-50/80 border-b border-slate-200 text-slate-600 font-bold uppercase tracking-wider text-[11px]">
                 <th className="p-4 w-12 text-center">No</th>
                 <th className="p-4">Nama & Asal Pendidik</th>
+                <th className="p-4 text-center w-20">L/P</th>
                 <th className="p-4">Jabatan / Peran</th>
                 <th className="p-4">Tugas Tambahan / Pembinaan</th>
                 <th className="p-4 text-right">Aksi</th>
@@ -415,7 +439,7 @@ export const TeacherListView: React.FC = () => {
             <tbody className="divide-y divide-slate-100 bg-white">
               {paginatedTeachers.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="text-center py-12 text-slate-400">
+                  <td colSpan={6} className="text-center py-12 text-slate-400">
                     Tidak ada data yang sesuai kriteria pencarian.
                   </td>
                 </tr>
@@ -486,6 +510,17 @@ export const TeacherListView: React.FC = () => {
                             </div>
                           </div>
                         </div>
+                      </td>
+
+                      {/* L/P */}
+                      <td className="p-4 text-center">
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-extrabold ${
+                          teacher.gender === 'P'
+                            ? 'bg-rose-50 text-rose-700 border border-rose-200'
+                            : 'bg-blue-50 text-blue-700 border border-blue-200'
+                        }`}>
+                          {teacher.gender === 'P' ? '👩 P' : '👨 L'}
+                        </span>
                       </td>
 
                       {/* Jabatan / Peran */}
