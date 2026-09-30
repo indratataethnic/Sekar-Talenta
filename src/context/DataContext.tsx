@@ -49,13 +49,12 @@ import {
   setDoc,
   deleteDoc,
   onSnapshot,
-  getDocs,
-  getDocFromServer
+  getDocs
 } from 'firebase/firestore';
 
 interface DataContextType {
   schoolProfile: SchoolProfile;
-  updateSchoolProfile: (updates: Partial<SchoolProfile>) => void;
+  updateSchoolProfile: (updates: Partial<SchoolProfile>) => Promise<void>;
   classes: SchoolClass[];
   talentCategories: TalentCategory[];
   ambassadorTypes: AmbassadorType[];
@@ -77,68 +76,50 @@ interface DataContextType {
   isDemoMode: boolean;
   isCloudConnected: boolean;
   testCloudConnection: () => Promise<boolean>;
-
-  // Student Actions
   addStudent: (studentData: Omit<Student, 'id' | 'createdAt' | 'updatedAt'>) => Promise<Student>;
   updateStudent: (id: string, updates: Partial<Student>) => Promise<void>;
   deleteStudent: (id: string) => Promise<void>;
   deleteAllStudents: () => Promise<void>;
-  importStudentsCsv: (importedStudents: Omit<Student, 'id' | 'createdAt' | 'updatedAt'>[]) => Promise<number>;
-
-  // Teacher Actions
+  importStudentsCsv: (importedList: Omit<Student, 'id' | 'createdAt' | 'updatedAt'>[]) => Promise<number>;
   addTeacher: (teacherData: Omit<Teacher, 'id' | 'createdAt' | 'updatedAt'>) => Promise<Teacher>;
   updateTeacher: (id: string, updates: Partial<Teacher>) => Promise<void>;
   deleteTeacher: (id: string) => Promise<void>;
   deleteAllTeachers: () => Promise<void>;
-  importTeachersCsv: (importedTeachers: Omit<Teacher, 'id' | 'createdAt' | 'updatedAt'>[]) => Promise<number>;
-
-  // Talent & Interest Actions
-  submitInterest: (interestData: Omit<StudentInterest, 'id' | 'submittedAt'>) => Promise<void>;
+  importTeachersCsv: (importedList: Omit<Teacher, 'id' | 'createdAt' | 'updatedAt'>[]) => Promise<number>;
+  submitInterest: (data: Omit<StudentInterest, 'id' | 'submittedAt'>) => Promise<void>;
   deleteInterest: (id: string) => Promise<void>;
-  addObservation: (observationData: Omit<TeacherObservation, 'id' | 'createdAt'>) => Promise<void>;
+  addObservation: (data: Omit<TeacherObservation, 'id' | 'createdAt'>) => Promise<void>;
   updateObservation: (id: string, updates: Partial<TeacherObservation>) => Promise<void>;
-
-  // Ambassador Actions
-  addAmbassadorType: (typeData: Omit<AmbassadorType, 'id'>) => Promise<void>;
+  addAmbassadorType: (data: Omit<AmbassadorType, 'id'>) => Promise<void>;
   updateAmbassadorType: (id: string, updates: Partial<AmbassadorType>) => Promise<void>;
   deleteAmbassadorType: (id: string) => Promise<void>;
-  addAmbassadorMember: (memberData: Omit<AmbassadorMember, 'id' | 'createdAt'>) => Promise<void>;
+  addAmbassadorMember: (data: Omit<AmbassadorMember, 'id' | 'createdAt'>) => Promise<void>;
   updateAmbassadorMember: (id: string, updates: Partial<AmbassadorMember>) => Promise<void>;
   removeAmbassadorMember: (id: string) => Promise<void>;
-  addAmbassadorProgram: (progData: Omit<AmbassadorProgram, 'id' | 'createdAt'>) => Promise<void>;
+  addAmbassadorProgram: (data: Omit<AmbassadorProgram, 'id' | 'createdAt'>) => Promise<void>;
   updateAmbassadorProgram: (id: string, updates: Partial<AmbassadorProgram>) => Promise<void>;
   deleteAmbassadorProgram: (id: string) => Promise<void>;
-
-  // Extracurricular Actions
-  addExtracurricular: (ekskulData: Omit<Extracurricular, 'id' | 'createdAt'>) => Promise<void>;
+  addExtracurricular: (data: Omit<Extracurricular, 'id' | 'createdAt'>) => Promise<void>;
   updateExtracurricular: (id: string, updates: Partial<Extracurricular>) => Promise<void>;
   deleteExtracurricular: (id: string) => Promise<void>;
-  registerExtracurricularMember: (memberData: Omit<ExtracurricularMember, 'id' | 'createdAt'>) => Promise<void>;
+  registerExtracurricularMember: (data: Omit<ExtracurricularMember, 'id' | 'createdAt'>) => Promise<void>;
   updateExtracurricularMember: (id: string, updates: Partial<ExtracurricularMember>) => Promise<void>;
   removeExtracurricularMember: (id: string) => Promise<void>;
-
-  // Activity & Attendance Actions
-  addActivity: (actData: Omit<Activity, 'id' | 'createdAt' | 'updatedAt'>) => Promise<Activity>;
+  addActivity: (data: Omit<Activity, 'id' | 'createdAt' | 'updatedAt'>) => Promise<Activity>;
   updateActivity: (id: string, updates: Partial<Activity>) => Promise<void>;
   deleteActivity: (id: string) => Promise<void>;
-  saveAttendanceSession: (sessionData: Omit<AttendanceSession, 'id' | 'recordedAt'>) => Promise<void>;
-
-  // Portfolio & Achievement Actions
-  addPortfolio: (portData: Omit<Portfolio, 'id' | 'createdAt'>) => Promise<Portfolio>;
+  saveAttendanceSession: (data: Omit<AttendanceSession, 'id' | 'recordedAt'>) => Promise<void>;
+  addPortfolio: (data: Omit<Portfolio, 'id' | 'createdAt'>) => Promise<Portfolio>;
   updatePortfolio: (id: string, updates: Partial<Portfolio>) => Promise<void>;
   verifyPortfolio: (id: string, verifiedBy: string) => Promise<void>;
   deletePortfolio: (id: string) => Promise<void>;
-  addAchievement: (achData: Omit<Achievement, 'id' | 'createdAt'>) => Promise<void>;
+  addAchievement: (data: Omit<Achievement, 'id' | 'createdAt'>) => Promise<void>;
   updateAchievement: (id: string, updates: Partial<Achievement>) => Promise<void>;
   deleteAchievement: (id: string) => Promise<void>;
-
-  // Announcements & Notifications
-  addAnnouncement: (annData: Omit<Announcement, 'id'>) => Promise<void>;
+  addAnnouncement: (data: Omit<Announcement, 'id'>) => Promise<void>;
   updateAnnouncement: (id: string, updates: Partial<Announcement>) => Promise<void>;
   deleteAnnouncement: (id: string) => Promise<void>;
   markNotificationAsRead: (id: string) => void;
-
-  // Demo & System Controls
   resetToDemoData: () => void;
   clearAllDemoData: () => void;
   exportAllDataAsJson: () => string;
@@ -158,6 +139,15 @@ function loadStored<T>(key: string, defaultValue: T): T {
     // fallback
   }
   return defaultValue;
+}
+
+/**
+  Helper to remove undefined values from objects/arrays before passing to Firestore
+ */
+function sanitizeForFirestore<T>(data: T): T {
+  return JSON.parse(
+    JSON.stringify(data, (_, value) => (value === undefined ? null : value))
+  );
 }
 
 export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -186,7 +176,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [notifications, setNotifications] = useState<NotificationItem[]>(() => loadStored('notifications', []));
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>(() => loadStored('audit_logs', initialAuditLogs));
 
-  // Sync to LocalStorage for offline-first continuous durability
+  // Sync to LocalStorage for offline durability
   useEffect(() => { localStorage.setItem(PREFIX + 'school_profile', JSON.stringify(schoolProfile)); }, [schoolProfile]);
   useEffect(() => { localStorage.setItem(PREFIX + 'ambassador_types', JSON.stringify(ambassadorTypes)); }, [ambassadorTypes]);
   useEffect(() => { localStorage.setItem(PREFIX + 'extracurriculars', JSON.stringify(extracurriculars)); }, [extracurriculars]);
@@ -205,165 +195,47 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => { localStorage.setItem(PREFIX + 'notifications', JSON.stringify(notifications)); }, [notifications]);
   useEffect(() => { localStorage.setItem(PREFIX + 'audit_logs', JSON.stringify(auditLogs)); }, [auditLogs]);
 
-  // Firestore Realtime Listeners when live
-  useEffect(() => {
-    if (!isFirebaseConfigured || !db || !currentUser) {
-      setIsCloudConnected(false);
-      return;
-    }
-
-    setIsCloudConnected(true);
-
-    // 1. Students collection listener
-    const unsubStudents = onSnapshot(collection(db, 'students'), (snap) => {
-      const items: Student[] = [];
-      snap.forEach((doc) => items.push(doc.data() as Student));
-      if (items.length > 0) setStudents(items);
-    }, (error) => {
-      console.warn('Firestore snapshot notice for students:', error.message);
-    });
-
-    // 1b. Teachers collection listener
-    const unsubTeachers = onSnapshot(collection(db, 'teachers'), (snap) => {
-      const items: Teacher[] = [];
-      snap.forEach((doc) => items.push(doc.data() as Teacher));
-      if (items.length > 0) setTeachers(items);
-    }, (error) => {
-      console.warn('Firestore snapshot notice for teachers:', error.message);
-    });
-
-    // 2. Student Interests listener
-    const unsubInterests = onSnapshot(collection(db, 'studentInterests'), (snap) => {
-      const items: StudentInterest[] = [];
-      snap.forEach((doc) => items.push(doc.data() as StudentInterest));
-      if (items.length > 0) setStudentInterests(items);
-    }, (error) => {
-      console.warn('Firestore snapshot notice for studentInterests:', error.message);
-    });
-
-    // 3. Teacher Observations listener
-    const unsubObservations = onSnapshot(collection(db, 'teacherObservations'), (snap) => {
-      const items: TeacherObservation[] = [];
-      snap.forEach((doc) => items.push(doc.data() as TeacherObservation));
-      if (items.length > 0) setTeacherObservations(items);
-    }, (error) => {
-      console.warn('Firestore snapshot notice for teacherObservations:', error.message);
-    });
-
-    // 4. Ambassador Members listener
-    const unsubAmbassadors = onSnapshot(collection(db, 'ambassadorMembers'), (snap) => {
-      const items: AmbassadorMember[] = [];
-      snap.forEach((doc) => items.push(doc.data() as AmbassadorMember));
-      if (items.length > 0) setAmbassadorMembers(items);
-    }, (error) => {
-      console.warn('Firestore snapshot notice for ambassadorMembers:', error.message);
-    });
-
-    // 5. Extracurricular Members listener
-    const unsubEkskul = onSnapshot(collection(db, 'extracurricularMembers'), (snap) => {
-      const items: ExtracurricularMember[] = [];
-      snap.forEach((doc) => items.push(doc.data() as ExtracurricularMember));
-      if (items.length > 0) setExtracurricularMembers(items);
-    }, (error) => {
-      console.warn('Firestore snapshot notice for extracurricularMembers:', error.message);
-    });
-
-    // 6. Portfolios listener
-    const unsubPortfolios = onSnapshot(collection(db, 'portfolios'), (snap) => {
-      const items: Portfolio[] = [];
-      snap.forEach((doc) => items.push(doc.data() as Portfolio));
-      if (items.length > 0) setPortfolios(items);
-    }, (error) => {
-      console.warn('Firestore snapshot notice for portfolios:', error.message);
-    });
-
-    // 7. Achievements listener
-    const unsubAchievements = onSnapshot(collection(db, 'achievements'), (snap) => {
-      const items: Achievement[] = [];
-      snap.forEach((doc) => items.push(doc.data() as Achievement));
-      if (items.length > 0) setAchievements(items);
-    }, (error) => {
-      console.warn('Firestore snapshot notice for achievements:', error.message);
-    });
-
-    // 8. Activities listener
-    const unsubActivities = onSnapshot(collection(db, 'activities'), (snap) => {
-      const items: Activity[] = [];
-      snap.forEach((doc) => items.push(doc.data() as Activity));
-      if (items.length > 0) setActivities(items);
-    }, (error) => {
-      console.warn('Firestore snapshot notice for activities:', error.message);
-    });
-
-    // 9. Announcements listener
-    const unsubAnnouncements = onSnapshot(collection(db, 'announcements'), (snap) => {
-      const items: Announcement[] = [];
-      snap.forEach((doc) => items.push(doc.data() as Announcement));
-      if (items.length > 0) setAnnouncements(items);
-    }, (error) => {
-      console.warn('Firestore snapshot notice for announcements:', error.message);
-    });
-
-    return () => {
-      unsubStudents();
-      unsubTeachers();
-      unsubInterests();
-      unsubObservations();
-      unsubAmbassadors();
-      unsubEkskul();
-      unsubPortfolios();
-      unsubAchievements();
-      unsubActivities();
-      unsubAnnouncements();
-    };
-  }, [currentUser]);
-
   // Seed initial data to Firestore
   const seedInitialDataToFirestore = async () => {
     if (!isFirebaseConfigured || !db) return;
     try {
-      // Seed School Profile
-      await setDoc(doc(db, 'schoolProfile', 'main'), schoolProfile);
+      await setDoc(doc(db, 'schoolProfile', 'main'), sanitizeForFirestore(schoolProfile));
 
-      // Seed Students
       for (const s of initialStudents) {
-        await setDoc(doc(db, 'students', s.id), s);
+        await setDoc(doc(db, 'students', s.id), sanitizeForFirestore(s));
       }
-      // Seed Teachers
       for (const t of initialTeachers) {
-        await setDoc(doc(db, 'teachers', t.id), t);
+        await setDoc(doc(db, 'teachers', t.id), sanitizeForFirestore(t));
       }
-      // Seed Interests
+      for (const e of initialExtracurriculars) {
+        await setDoc(doc(db, 'extracurriculars', e.id), sanitizeForFirestore(e));
+      }
+      for (const aType of initialAmbassadorTypes) {
+        await setDoc(doc(db, 'ambassadorTypes', aType.id), sanitizeForFirestore(aType));
+      }
       for (const i of initialStudentInterests) {
-        await setDoc(doc(db, 'studentInterests', i.id), i);
+        await setDoc(doc(db, 'studentInterests', i.id), sanitizeForFirestore(i));
       }
-      // Seed Observations
       for (const o of initialTeacherObservations) {
-        await setDoc(doc(db, 'teacherObservations', o.id), o);
+        await setDoc(doc(db, 'teacherObservations', o.id), sanitizeForFirestore(o));
       }
-      // Seed Ambassador Members
       for (const am of initialAmbassadorMembers) {
-        await setDoc(doc(db, 'ambassadorMembers', am.id), am);
+        await setDoc(doc(db, 'ambassadorMembers', am.id), sanitizeForFirestore(am));
       }
-      // Seed Extracurricular Members
       for (const em of initialExtracurricularMembers) {
-        await setDoc(doc(db, 'extracurricularMembers', em.id), em);
+        await setDoc(doc(db, 'extracurricularMembers', em.id), sanitizeForFirestore(em));
       }
-      // Seed Portfolios
       for (const p of initialPortfolios) {
-        await setDoc(doc(db, 'portfolios', p.id), p);
+        await setDoc(doc(db, 'portfolios', p.id), sanitizeForFirestore(p));
       }
-      // Seed Achievements
       for (const a of initialAchievements) {
-        await setDoc(doc(db, 'achievements', a.id), a);
+        await setDoc(doc(db, 'achievements', a.id), sanitizeForFirestore(a));
       }
-      // Seed Activities
       for (const act of initialActivities) {
-        await setDoc(doc(db, 'activities', act.id), act);
+        await setDoc(doc(db, 'activities', act.id), sanitizeForFirestore(act));
       }
-      // Seed Announcements
       for (const ann of initialAnnouncements) {
-        await setDoc(doc(db, 'announcements', ann.id), ann);
+        await setDoc(doc(db, 'announcements', ann.id), sanitizeForFirestore(ann));
       }
       logAction('SYSTEM', 'Database', 'all', 'Sinkronisasi data awal ke Cloud Firestore berhasil.');
     } catch (err: any) {
@@ -371,18 +243,173 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  // Automatic boot check: seed if Firestore database is empty
+  useEffect(() => {
+    if (!isFirebaseConfigured || !db) return;
+    const checkAndSeed = async () => {
+      try {
+        const snap = await getDocs(collection(db, 'students'));
+        if (snap.empty) {
+          console.info('Firestore database is empty. Seeding initial records to Cloud Database...');
+          await seedInitialDataToFirestore();
+        }
+      } catch (err) {
+        console.warn('Initial Firestore check notice:', err);
+      }
+    };
+    checkAndSeed();
+  }, []);
+
+  // Firestore Realtime Listeners across all collections
+  useEffect(() => {
+    if (!isFirebaseConfigured || !db) {
+      setIsCloudConnected(false);
+      return;
+    }
+
+    setIsCloudConnected(true);
+
+    // 0. School Profile listener
+    const unsubSchool = onSnapshot(doc(db, 'schoolProfile', 'main'), (snap) => {
+      if (snap.exists()) setSchoolProfile(snap.data() as SchoolProfile);
+    }, (error) => console.warn('School profile snapshot notice:', error.message));
+
+    // 1. Students listener
+    const unsubStudents = onSnapshot(collection(db, 'students'), (snap) => {
+      const items: Student[] = [];
+      snap.forEach((doc) => items.push(doc.data() as Student));
+      if (items.length > 0) setStudents(items);
+    }, (error) => console.warn('Students snapshot notice:', error.message));
+
+    // 2. Teachers listener
+    const unsubTeachers = onSnapshot(collection(db, 'teachers'), (snap) => {
+      const items: Teacher[] = [];
+      snap.forEach((doc) => items.push(doc.data() as Teacher));
+      if (items.length > 0) setTeachers(items);
+    }, (error) => console.warn('Teachers snapshot notice:', error.message));
+
+    // 3. Extracurriculars listener
+    const unsubEkskulMaster = onSnapshot(collection(db, 'extracurriculars'), (snap) => {
+      const items: Extracurricular[] = [];
+      snap.forEach((doc) => items.push(doc.data() as Extracurricular));
+      if (items.length > 0) setExtracurriculars(items);
+    }, (error) => console.warn('Extracurriculars snapshot notice:', error.message));
+
+    // 4. Ambassador Types listener
+    const unsubAmbassadorTypes = onSnapshot(collection(db, 'ambassadorTypes'), (snap) => {
+      const items: AmbassadorType[] = [];
+      snap.forEach((doc) => items.push(doc.data() as AmbassadorType));
+      if (items.length > 0) setAmbassadorTypes(items);
+    }, (error) => console.warn('AmbassadorTypes snapshot notice:', error.message));
+
+    // 5. Student Interests listener
+    const unsubInterests = onSnapshot(collection(db, 'studentInterests'), (snap) => {
+      const items: StudentInterest[] = [];
+      snap.forEach((doc) => items.push(doc.data() as StudentInterest));
+      if (items.length > 0) setStudentInterests(items);
+    }, (error) => console.warn('StudentInterests snapshot notice:', error.message));
+
+    // 6. Teacher Observations listener
+    const unsubObservations = onSnapshot(collection(db, 'teacherObservations'), (snap) => {
+      const items: TeacherObservation[] = [];
+      snap.forEach((doc) => items.push(doc.data() as TeacherObservation));
+      if (items.length > 0) setTeacherObservations(items);
+    }, (error) => console.warn('TeacherObservations snapshot notice:', error.message));
+
+    // 7. Ambassador Members listener
+    const unsubAmbassadors = onSnapshot(collection(db, 'ambassadorMembers'), (snap) => {
+      const items: AmbassadorMember[] = [];
+      snap.forEach((doc) => items.push(doc.data() as AmbassadorMember));
+      if (items.length > 0) setAmbassadorMembers(items);
+    }, (error) => console.warn('AmbassadorMembers snapshot notice:', error.message));
+
+    // 8. Ambassador Programs listener
+    const unsubAmbassadorPrograms = onSnapshot(collection(db, 'ambassadorPrograms'), (snap) => {
+      const items: AmbassadorProgram[] = [];
+      snap.forEach((doc) => items.push(doc.data() as AmbassadorProgram));
+      if (items.length > 0) setAmbassadorPrograms(items);
+    }, (error) => console.warn('AmbassadorPrograms snapshot notice:', error.message));
+
+    // 9. Extracurricular Members listener
+    const unsubEkskulMembers = onSnapshot(collection(db, 'extracurricularMembers'), (snap) => {
+      const items: ExtracurricularMember[] = [];
+      snap.forEach((doc) => items.push(doc.data() as ExtracurricularMember));
+      if (items.length > 0) setExtracurricularMembers(items);
+    }, (error) => console.warn('ExtracurricularMembers snapshot notice:', error.message));
+
+    // 10. Portfolios listener
+    const unsubPortfolios = onSnapshot(collection(db, 'portfolios'), (snap) => {
+      const items: Portfolio[] = [];
+      snap.forEach((doc) => items.push(doc.data() as Portfolio));
+      if (items.length > 0) setPortfolios(items);
+    }, (error) => console.warn('Portfolios snapshot notice:', error.message));
+
+    // 11. Achievements listener
+    const unsubAchievements = onSnapshot(collection(db, 'achievements'), (snap) => {
+      const items: Achievement[] = [];
+      snap.forEach((doc) => items.push(doc.data() as Achievement));
+      if (items.length > 0) setAchievements(items);
+    }, (error) => console.warn('Achievements snapshot notice:', error.message));
+
+    // 12. Activities listener
+    const unsubActivities = onSnapshot(collection(db, 'activities'), (snap) => {
+      const items: Activity[] = [];
+      snap.forEach((doc) => items.push(doc.data() as Activity));
+      if (items.length > 0) setActivities(items);
+    }, (error) => console.warn('Activities snapshot notice:', error.message));
+
+    // 13. Attendance Sessions listener
+    const unsubAttendance = onSnapshot(collection(db, 'attendanceSessions'), (snap) => {
+      const items: AttendanceSession[] = [];
+      snap.forEach((doc) => items.push(doc.data() as AttendanceSession));
+      if (items.length > 0) setAttendanceSessions(items);
+    }, (error) => console.warn('AttendanceSessions snapshot notice:', error.message));
+
+    // 14. Announcements listener
+    const unsubAnnouncements = onSnapshot(collection(db, 'announcements'), (snap) => {
+      const items: Announcement[] = [];
+      snap.forEach((doc) => items.push(doc.data() as Announcement));
+      if (items.length > 0) setAnnouncements(items);
+    }, (error) => console.warn('Announcements snapshot notice:', error.message));
+
+    // 15. Audit Logs listener
+    const unsubLogs = onSnapshot(collection(db, 'auditLogs'), (snap) => {
+      const items: AuditLog[] = [];
+      snap.forEach((doc) => items.push(doc.data() as AuditLog));
+      if (items.length > 0) setAuditLogs(items);
+    }, (error) => console.warn('AuditLogs snapshot notice:', error.message));
+
+    return () => {
+      unsubSchool();
+      unsubStudents();
+      unsubTeachers();
+      unsubEkskulMaster();
+      unsubAmbassadorTypes();
+      unsubInterests();
+      unsubObservations();
+      unsubAmbassadors();
+      unsubAmbassadorPrograms();
+      unsubEkskulMembers();
+      unsubPortfolios();
+      unsubAchievements();
+      unsubActivities();
+      unsubAttendance();
+      unsubAnnouncements();
+      unsubLogs();
+    };
+  }, []);
+
   const testCloudConnection = async (): Promise<boolean> => {
     return await testConnection();
   };
 
   // Helper for audit logging
   const logAction = (action: AuditActionType, entityType: string, entityId: string, details: string) => {
-    if (!currentUser) return;
     const newLog: AuditLog = {
       id: `log_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
-      userId: currentUser.id,
-      userName: currentUser.displayName,
-      userRole: currentUser.role,
+      userId: currentUser?.id || 'system',
+      userName: currentUser?.displayName || 'Pengguna System',
+      userRole: currentUser?.role || 'super_admin',
       action,
       entityType,
       entityId,
@@ -391,9 +418,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
     setAuditLogs((prev) => [newLog, ...prev]);
 
-    // Push log to Firestore if live
     if (isFirebaseConfigured && db) {
-      setDoc(doc(db, 'auditLogs', newLog.id), newLog).catch((err) => {
+      setDoc(doc(db, 'auditLogs', newLog.id), sanitizeForFirestore(newLog)).catch((err) => {
         console.info('Audit log firestore notice:', err.message);
       });
     }
@@ -406,14 +432,14 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       id: `std_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
-      isDemo: true
+      isDemo: false
     };
     setStudents((prev) => [newStudent, ...prev]);
     logAction('CREATE', 'Student', newStudent.id, `Menambahkan murid baru: ${newStudent.fullName} (${newStudent.classId})`);
 
     if (isFirebaseConfigured && db) {
       try {
-        await setDoc(doc(db, 'students', newStudent.id), newStudent);
+        await setDoc(doc(db, 'students', newStudent.id), sanitizeForFirestore(newStudent));
       } catch (err) {
         handleFirestoreError(err, OperationType.CREATE, `students/${newStudent.id}`);
       }
@@ -423,14 +449,15 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const updateStudent = async (id: string, updates: Partial<Student>) => {
+    const cleanUpdates = sanitizeForFirestore({ ...updates, updatedAt: new Date().toISOString() });
     setStudents((prev) =>
-      prev.map((s) => (s.id === id ? { ...s, ...updates, updatedAt: new Date().toISOString() } : s))
+      prev.map((s) => (s.id === id ? { ...s, ...cleanUpdates } : s))
     );
     logAction('UPDATE', 'Student', id, `Memperbarui data murid ID ${id}`);
 
     if (isFirebaseConfigured && db) {
       try {
-        await setDoc(doc(db, 'students', id), { ...updates, updatedAt: new Date().toISOString() }, { merge: true });
+        await setDoc(doc(db, 'students', id), cleanUpdates, { merge: true });
       } catch (err) {
         handleFirestoreError(err, OperationType.UPDATE, `students/${id}`);
       }
@@ -488,7 +515,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (isFirebaseConfigured && db) {
       for (const item of newItems) {
         try {
-          await setDoc(doc(db, 'students', item.id), item);
+          await setDoc(doc(db, 'students', item.id), sanitizeForFirestore(item));
         } catch (err) {
           console.warn('Import student to firestore notice:', err);
         }
@@ -504,14 +531,14 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       id: `tch_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
-      isDemo: true
+      isDemo: false
     };
     setTeachers((prev) => [newTeacher, ...prev]);
     logAction('CREATE', 'Teacher', newTeacher.id, `Menambahkan data guru baru: ${newTeacher.fullName} (${newTeacher.position})`);
 
     if (isFirebaseConfigured && db) {
       try {
-        await setDoc(doc(db, 'teachers', newTeacher.id), newTeacher);
+        await setDoc(doc(db, 'teachers', newTeacher.id), sanitizeForFirestore(newTeacher));
       } catch (err) {
         handleFirestoreError(err, OperationType.CREATE, `teachers/${newTeacher.id}`);
       }
@@ -521,14 +548,15 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const updateTeacher = async (id: string, updates: Partial<Teacher>) => {
+    const cleanUpdates = sanitizeForFirestore({ ...updates, updatedAt: new Date().toISOString() });
     setTeachers((prev) =>
-      prev.map((t) => (t.id === id ? { ...t, ...updates, updatedAt: new Date().toISOString() } : t))
+      prev.map((t) => (t.id === id ? { ...t, ...cleanUpdates } : t))
     );
     logAction('UPDATE', 'Teacher', id, `Memperbarui data guru ID ${id}`);
 
     if (isFirebaseConfigured && db) {
       try {
-        await setDoc(doc(db, 'teachers', id), { ...updates, updatedAt: new Date().toISOString() }, { merge: true });
+        await setDoc(doc(db, 'teachers', id), cleanUpdates, { merge: true });
       } catch (err) {
         handleFirestoreError(err, OperationType.UPDATE, `teachers/${id}`);
       }
@@ -580,7 +608,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (isFirebaseConfigured && db) {
       for (const item of newItems) {
         try {
-          await setDoc(doc(db, 'teachers', item.id), item);
+          await setDoc(doc(db, 'teachers', item.id), sanitizeForFirestore(item));
         } catch (err) {
           console.warn('Import teacher to firestore notice:', err);
         }
@@ -604,7 +632,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     if (isFirebaseConfigured && db) {
       try {
-        await setDoc(doc(db, 'studentInterests', newInterest.id), newInterest);
+        await setDoc(doc(db, 'studentInterests', newInterest.id), sanitizeForFirestore(newInterest));
       } catch (err) {
         handleFirestoreError(err, OperationType.CREATE, `studentInterests/${newInterest.id}`);
       }
@@ -635,7 +663,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     if (isFirebaseConfigured && db) {
       try {
-        await setDoc(doc(db, 'teacherObservations', newObs.id), newObs);
+        await setDoc(doc(db, 'teacherObservations', newObs.id), sanitizeForFirestore(newObs));
       } catch (err) {
         handleFirestoreError(err, OperationType.CREATE, `teacherObservations/${newObs.id}`);
       }
@@ -643,12 +671,13 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const updateObservation = async (id: string, updates: Partial<TeacherObservation>) => {
-    setTeacherObservations((prev) => prev.map((o) => (o.id === id ? { ...o, ...updates } : o)));
+    const cleanUpdates = sanitizeForFirestore(updates);
+    setTeacherObservations((prev) => prev.map((o) => (o.id === id ? { ...o, ...cleanUpdates } : o)));
     logAction('UPDATE', 'TeacherObservation', id, `Memperbarui pengamatan ID ${id}`);
 
     if (isFirebaseConfigured && db) {
       try {
-        await setDoc(doc(db, 'teacherObservations', id), updates, { merge: true });
+        await setDoc(doc(db, 'teacherObservations', id), cleanUpdates, { merge: true });
       } catch (err) {
         handleFirestoreError(err, OperationType.UPDATE, `teacherObservations/${id}`);
       }
@@ -667,7 +696,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     if (isFirebaseConfigured && db) {
       try {
-        await setDoc(doc(db, 'ambassadorTypes', newType.id), newType);
+        await setDoc(doc(db, 'ambassadorTypes', newType.id), sanitizeForFirestore(newType));
       } catch (err) {
         handleFirestoreError(err, OperationType.CREATE, `ambassadorTypes/${newType.id}`);
       }
@@ -675,12 +704,13 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const updateAmbassadorType = async (id: string, updates: Partial<AmbassadorType>) => {
-    setAmbassadorTypes((prev) => prev.map((t) => (t.id === id ? { ...t, ...updates } : t)));
+    const cleanUpdates = sanitizeForFirestore(updates);
+    setAmbassadorTypes((prev) => prev.map((t) => (t.id === id ? { ...t, ...cleanUpdates } : t)));
     logAction('UPDATE', 'AmbassadorType', id, `Memperbarui profil jenis duta ID ${id}`);
 
     if (isFirebaseConfigured && db) {
       try {
-        await setDoc(doc(db, 'ambassadorTypes', id), updates, { merge: true });
+        await setDoc(doc(db, 'ambassadorTypes', id), cleanUpdates, { merge: true });
       } catch (err) {
         handleFirestoreError(err, OperationType.UPDATE, `ambassadorTypes/${id}`);
       }
@@ -714,7 +744,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     if (isFirebaseConfigured && db) {
       try {
-        await setDoc(doc(db, 'ambassadorMembers', newMember.id), newMember);
+        await setDoc(doc(db, 'ambassadorMembers', newMember.id), sanitizeForFirestore(newMember));
       } catch (err) {
         handleFirestoreError(err, OperationType.CREATE, `ambassadorMembers/${newMember.id}`);
       }
@@ -722,12 +752,13 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const updateAmbassadorMember = async (id: string, updates: Partial<AmbassadorMember>) => {
-    setAmbassadorMembers((prev) => prev.map((m) => (m.id === id ? { ...m, ...updates } : m)));
+    const cleanUpdates = sanitizeForFirestore(updates);
+    setAmbassadorMembers((prev) => prev.map((m) => (m.id === id ? { ...m, ...cleanUpdates } : m)));
     logAction('UPDATE', 'AmbassadorMember', id, `Memperbarui status anggota duta ID ${id}`);
 
     if (isFirebaseConfigured && db) {
       try {
-        await setDoc(doc(db, 'ambassadorMembers', id), updates, { merge: true });
+        await setDoc(doc(db, 'ambassadorMembers', id), cleanUpdates, { merge: true });
       } catch (err) {
         handleFirestoreError(err, OperationType.UPDATE, `ambassadorMembers/${id}`);
       }
@@ -758,7 +789,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     if (isFirebaseConfigured && db) {
       try {
-        await setDoc(doc(db, 'ambassadorPrograms', newProg.id), newProg);
+        await setDoc(doc(db, 'ambassadorPrograms', newProg.id), sanitizeForFirestore(newProg));
       } catch (err) {
         handleFirestoreError(err, OperationType.CREATE, `ambassadorPrograms/${newProg.id}`);
       }
@@ -766,12 +797,13 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const updateAmbassadorProgram = async (id: string, updates: Partial<AmbassadorProgram>) => {
-    setAmbassadorPrograms((prev) => prev.map((p) => (p.id === id ? { ...p, ...updates } : p)));
+    const cleanUpdates = sanitizeForFirestore(updates);
+    setAmbassadorPrograms((prev) => prev.map((p) => (p.id === id ? { ...p, ...cleanUpdates } : p)));
     logAction('UPDATE', 'AmbassadorProgram', id, `Memperbarui program kerja ID ${id}`);
 
     if (isFirebaseConfigured && db) {
       try {
-        await setDoc(doc(db, 'ambassadorPrograms', id), updates, { merge: true });
+        await setDoc(doc(db, 'ambassadorPrograms', id), cleanUpdates, { merge: true });
       } catch (err) {
         handleFirestoreError(err, OperationType.UPDATE, `ambassadorPrograms/${id}`);
       }
@@ -803,7 +835,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     if (isFirebaseConfigured && db) {
       try {
-        await setDoc(doc(db, 'extracurriculars', newExtra.id), newExtra);
+        await setDoc(doc(db, 'extracurriculars', newExtra.id), sanitizeForFirestore(newExtra));
       } catch (err) {
         handleFirestoreError(err, OperationType.CREATE, `extracurriculars/${newExtra.id}`);
       }
@@ -811,12 +843,13 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const updateExtracurricular = async (id: string, updates: Partial<Extracurricular>) => {
-    setExtracurriculars((prev) => prev.map((e) => (e.id === id ? { ...e, ...updates } : e)));
+    const cleanUpdates = sanitizeForFirestore(updates);
+    setExtracurriculars((prev) => prev.map((e) => (e.id === id ? { ...e, ...cleanUpdates } : e)));
     logAction('UPDATE', 'Extracurricular', id, `Memperbarui ekstrakurikuler ID ${id}`);
 
     if (isFirebaseConfigured && db) {
       try {
-        await setDoc(doc(db, 'extracurriculars', id), updates, { merge: true });
+        await setDoc(doc(db, 'extracurriculars', id), cleanUpdates, { merge: true });
       } catch (err) {
         handleFirestoreError(err, OperationType.UPDATE, `extracurriculars/${id}`);
       }
@@ -847,7 +880,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     if (isFirebaseConfigured && db) {
       try {
-        await setDoc(doc(db, 'extracurricularMembers', newMember.id), newMember);
+        await setDoc(doc(db, 'extracurricularMembers', newMember.id), sanitizeForFirestore(newMember));
       } catch (err) {
         handleFirestoreError(err, OperationType.CREATE, `extracurricularMembers/${newMember.id}`);
       }
@@ -855,12 +888,13 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const updateExtracurricularMember = async (id: string, updates: Partial<ExtracurricularMember>) => {
-    setExtracurricularMembers((prev) => prev.map((m) => (m.id === id ? { ...m, ...updates } : m)));
+    const cleanUpdates = sanitizeForFirestore(updates);
+    setExtracurricularMembers((prev) => prev.map((m) => (m.id === id ? { ...m, ...cleanUpdates } : m)));
     logAction('UPDATE', 'ExtracurricularMember', id, `Memperbarui data anggota ekskul ID ${id}`);
 
     if (isFirebaseConfigured && db) {
       try {
-        await setDoc(doc(db, 'extracurricularMembers', id), updates, { merge: true });
+        await setDoc(doc(db, 'extracurricularMembers', id), cleanUpdates, { merge: true });
       } catch (err) {
         handleFirestoreError(err, OperationType.UPDATE, `extracurricularMembers/${id}`);
       }
@@ -893,7 +927,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     if (isFirebaseConfigured && db) {
       try {
-        await setDoc(doc(db, 'activities', newAct.id), newAct);
+        await setDoc(doc(db, 'activities', newAct.id), sanitizeForFirestore(newAct));
       } catch (err) {
         handleFirestoreError(err, OperationType.CREATE, `activities/${newAct.id}`);
       }
@@ -902,14 +936,15 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const updateActivity = async (id: string, updates: Partial<Activity>) => {
+    const cleanUpdates = sanitizeForFirestore({ ...updates, updatedAt: new Date().toISOString() });
     setActivities((prev) =>
-      prev.map((a) => (a.id === id ? { ...a, ...updates, updatedAt: new Date().toISOString() } : a))
+      prev.map((a) => (a.id === id ? { ...a, ...cleanUpdates } : a))
     );
     logAction('UPDATE', 'Activity', id, `Memperbarui agenda kegiatan ID ${id}`);
 
     if (isFirebaseConfigured && db) {
       try {
-        await setDoc(doc(db, 'activities', id), updates, { merge: true });
+        await setDoc(doc(db, 'activities', id), cleanUpdates, { merge: true });
       } catch (err) {
         handleFirestoreError(err, OperationType.UPDATE, `activities/${id}`);
       }
@@ -940,7 +975,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     if (isFirebaseConfigured && db) {
       try {
-        await setDoc(doc(db, 'attendanceSessions', newSession.id), newSession);
+        await setDoc(doc(db, 'attendanceSessions', newSession.id), sanitizeForFirestore(newSession));
       } catch (err) {
         handleFirestoreError(err, OperationType.CREATE, `attendanceSessions/${newSession.id}`);
       }
@@ -959,7 +994,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     if (isFirebaseConfigured && db) {
       try {
-        await setDoc(doc(db, 'portfolios', newPort.id), newPort);
+        await setDoc(doc(db, 'portfolios', newPort.id), sanitizeForFirestore(newPort));
       } catch (err) {
         handleFirestoreError(err, OperationType.CREATE, `portfolios/${newPort.id}`);
       }
@@ -968,12 +1003,13 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const updatePortfolio = async (id: string, updates: Partial<Portfolio>) => {
-    setPortfolios((prev) => prev.map((p) => (p.id === id ? { ...p, ...updates } : p)));
+    const cleanUpdates = sanitizeForFirestore(updates);
+    setPortfolios((prev) => prev.map((p) => (p.id === id ? { ...p, ...cleanUpdates } : p)));
     logAction('UPDATE', 'Portfolio', id, `Memperbarui portofolio ID ${id}`);
 
     if (isFirebaseConfigured && db) {
       try {
-        await setDoc(doc(db, 'portfolios', id), updates, { merge: true });
+        await setDoc(doc(db, 'portfolios', id), cleanUpdates, { merge: true });
       } catch (err) {
         handleFirestoreError(err, OperationType.UPDATE, `portfolios/${id}`);
       }
@@ -981,7 +1017,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const verifyPortfolio = async (id: string, verifiedBy: string) => {
-    const updates = { isVerified: true, verifiedBy, verifiedAt: new Date().toISOString() };
+    const updates = sanitizeForFirestore({ isVerified: true, verifiedBy, verifiedAt: new Date().toISOString() });
     setPortfolios((prev) =>
       prev.map((p) => (p.id === id ? { ...p, ...updates } : p))
     );
@@ -1020,7 +1056,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     if (isFirebaseConfigured && db) {
       try {
-        await setDoc(doc(db, 'achievements', newAch.id), newAch);
+        await setDoc(doc(db, 'achievements', newAch.id), sanitizeForFirestore(newAch));
       } catch (err) {
         handleFirestoreError(err, OperationType.CREATE, `achievements/${newAch.id}`);
       }
@@ -1028,12 +1064,13 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const updateAchievement = async (id: string, updates: Partial<Achievement>) => {
-    setAchievements((prev) => prev.map((a) => (a.id === id ? { ...a, ...updates } : a)));
+    const cleanUpdates = sanitizeForFirestore(updates);
+    setAchievements((prev) => prev.map((a) => (a.id === id ? { ...a, ...cleanUpdates } : a)));
     logAction('UPDATE', 'Achievement', id, `Memperbarui prestasi ID ${id}`);
 
     if (isFirebaseConfigured && db) {
       try {
-        await setDoc(doc(db, 'achievements', id), updates, { merge: true });
+        await setDoc(doc(db, 'achievements', id), cleanUpdates, { merge: true });
       } catch (err) {
         handleFirestoreError(err, OperationType.UPDATE, `achievements/${id}`);
       }
@@ -1064,7 +1101,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     if (isFirebaseConfigured && db) {
       try {
-        await setDoc(doc(db, 'announcements', newAnn.id), newAnn);
+        await setDoc(doc(db, 'announcements', newAnn.id), sanitizeForFirestore(newAnn));
       } catch (err) {
         handleFirestoreError(err, OperationType.CREATE, `announcements/${newAnn.id}`);
       }
@@ -1072,12 +1109,13 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const updateAnnouncement = async (id: string, updates: Partial<Announcement>) => {
-    setAnnouncements((prev) => prev.map((a) => (a.id === id ? { ...a, ...updates } : a)));
+    const cleanUpdates = sanitizeForFirestore(updates);
+    setAnnouncements((prev) => prev.map((a) => (a.id === id ? { ...a, ...cleanUpdates } : a)));
     logAction('UPDATE', 'Announcement', id, `Memperbarui pengumuman ID ${id}`);
 
     if (isFirebaseConfigured && db) {
       try {
-        await setDoc(doc(db, 'announcements', id), updates, { merge: true });
+        await setDoc(doc(db, 'announcements', id), cleanUpdates, { merge: true });
       } catch (err) {
         handleFirestoreError(err, OperationType.UPDATE, `announcements/${id}`);
       }
@@ -1101,14 +1139,17 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, isRead: true } : n)));
   };
 
-  const updateSchoolProfile = (updates: Partial<SchoolProfile>) => {
-    setSchoolProfile((prev) => ({ ...prev, ...updates }));
+  const updateSchoolProfile = async (updates: Partial<SchoolProfile>) => {
+    const cleanUpdates = sanitizeForFirestore(updates);
+    setSchoolProfile((prev) => ({ ...prev, ...cleanUpdates }));
     logAction('UPDATE', 'SchoolProfile', 'main', `Memperbarui profil instansi sekolah`);
 
     if (isFirebaseConfigured && db) {
-      setDoc(doc(db, 'schoolProfile', 'main'), { ...schoolProfile, ...updates }, { merge: true }).catch((err) => {
-        console.warn('Update school profile notice:', err);
-      });
+      try {
+        await setDoc(doc(db, 'schoolProfile', 'main'), sanitizeForFirestore({ ...schoolProfile, ...cleanUpdates }), { merge: true });
+      } catch (err) {
+        handleFirestoreError(err, OperationType.UPDATE, 'schoolProfile/main');
+      }
     }
   };
 
@@ -1177,9 +1218,25 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const importAllDataFromJson = async (jsonStr: string): Promise<boolean> => {
     try {
       const parsed = JSON.parse(jsonStr);
-      if (parsed.schoolProfile) setSchoolProfile(parsed.schoolProfile);
-      if (Array.isArray(parsed.students)) setStudents(parsed.students);
-      if (Array.isArray(parsed.teachers)) setTeachers(parsed.teachers);
+      if (parsed.schoolProfile) await updateSchoolProfile(parsed.schoolProfile);
+      if (Array.isArray(parsed.students)) {
+        setStudents(parsed.students);
+        if (isFirebaseConfigured && db) {
+          for (const s of parsed.students) await setDoc(doc(db, 'students', s.id), sanitizeForFirestore(s));
+        }
+      }
+      if (Array.isArray(parsed.teachers)) {
+        setTeachers(parsed.teachers);
+        if (isFirebaseConfigured && db) {
+          for (const t of parsed.teachers) await setDoc(doc(db, 'teachers', t.id), sanitizeForFirestore(t));
+        }
+      }
+      if (Array.isArray(parsed.extracurriculars)) {
+        setExtracurriculars(parsed.extracurriculars);
+        if (isFirebaseConfigured && db) {
+          for (const e of parsed.extracurriculars) await setDoc(doc(db, 'extracurriculars', e.id), sanitizeForFirestore(e));
+        }
+      }
       if (Array.isArray(parsed.studentInterests)) setStudentInterests(parsed.studentInterests);
       if (Array.isArray(parsed.teacherObservations)) setTeacherObservations(parsed.teacherObservations);
       if (Array.isArray(parsed.ambassadorMembers)) setAmbassadorMembers(parsed.ambassadorMembers);
