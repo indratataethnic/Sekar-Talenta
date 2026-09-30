@@ -23,7 +23,10 @@ import {
   AlertCircle,
   ArrowUpDown,
   Phone,
-  UserCheck
+  UserCheck,
+  ShieldCheck,
+  ShieldAlert,
+  AlertTriangle
 } from 'lucide-react';
 import { Student } from '../../types';
 import { useData } from '../../context/DataContext';
@@ -36,6 +39,7 @@ import { StudentFormModal } from './StudentFormModal';
 import { CsvImportModal } from './CsvImportModal';
 import { StudentDetailView } from './StudentDetailView';
 import { StudentProfileCardModal } from './StudentProfileCardModal';
+import { validateStudentExtracurriculars, StudentEkskulValidation, ComplianceStatus } from '../../utils/ruleValidation';
 
 export const StudentListView: React.FC = () => {
   const {
@@ -45,8 +49,12 @@ export const StudentListView: React.FC = () => {
     deleteAllStudents,
     studentInterests,
     ambassadorMembers,
-    extracurricularMembers
+    extracurricularMembers,
+    ambassadorTypes,
+    extracurriculars,
+    schoolProfile
   } = useData();
+
   const { canManageStudents, canEditStudent, isSuperAdmin, isGuruKelas, currentUser } = useAuth();
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -69,6 +77,10 @@ export const StudentListView: React.FC = () => {
   const [interestFilter, setInterestFilter] = useState<'ALL' | 'MAPPED' | 'UNMAPPED'>('ALL');
   const [ambassadorFilter, setAmbassadorFilter] = useState<'ALL' | 'YES' | 'NO'>('ALL');
   const [ekskulFilter, setEkskulFilter] = useState<'ALL' | 'YES' | 'NO'>('ALL');
+  const [complianceFilter, setComplianceFilter] = useState<'ALL' | ComplianceStatus | 'NO_ELECTIVE'>('ALL');
+  const [selectedEkskul, setSelectedEkskul] = useState<string>('ALL');
+  const [selectedAmbassador, setSelectedAmbassador] = useState<string>('ALL');
+  const [selectedAcademicYear, setSelectedAcademicYear] = useState<string>('ALL');
   const [sortBy, setSortBy] = useState<'name_asc' | 'name_desc' | 'nisn' | 'class'>('name_asc');
   const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
 
@@ -108,6 +120,24 @@ export const StudentListView: React.FC = () => {
     return students;
   }, [students, isClassLocked, currentUser?.assignedClass]);
 
+  // Pre-calculate extracurricular & ambassador compliance for all students
+  const maxElective = schoolProfile.maxElectiveExtracurricular || 2;
+  const studentComplianceMap = useMemo(() => {
+    const map = new Map<string, StudentEkskulValidation>();
+    for (const s of students) {
+      map.set(
+        s.id,
+        validateStudentExtracurriculars(
+          s,
+          extracurricularMembers,
+          maxElective,
+          schoolProfile.currentAcademicYear
+        )
+      );
+    }
+    return map;
+  }, [students, extracurricularMembers, maxElective, schoolProfile.currentAcademicYear]);
+
   // Metric stats
   const totalStudents = classScopedStudents.length;
   const countLaki = classScopedStudents.filter((s) => s.gender === 'L').length;
@@ -116,6 +146,13 @@ export const StudentListView: React.FC = () => {
   const countAmbassadors = classScopedStudents.filter((s) => ambassadorStudentIds.has(s.id)).length;
   const countEkskul = classScopedStudents.filter((s) => ekskulStudentIds.has(s.id)).length;
   const mappedPercentage = totalStudents > 0 ? Math.round((countMapped / totalStudents) * 100) : 0;
+
+  // Compliance metric stats
+  const countMemenuhi = classScopedStudents.filter((s) => studentComplianceMap.get(s.id)?.status === 'Memenuhi Ketentuan').length;
+  const countBelumMemenuhi = classScopedStudents.filter((s) => studentComplianceMap.get(s.id)?.status === 'Belum Memenuhi').length;
+  const countMelebihiBatas = classScopedStudents.filter((s) => studentComplianceMap.get(s.id)?.status === 'Melebihi Batas').length;
+  const countPengecualian = classScopedStudents.filter((s) => studentComplianceMap.get(s.id)?.status === 'Pengecualian').length;
+  const countNoElective = classScopedStudents.filter((s) => studentComplianceMap.get(s.id)?.isElectiveUnderMin).length;
 
   // Filter students
   const filteredStudents = useMemo(() => {
@@ -151,7 +188,46 @@ export const StudentListView: React.FC = () => {
         (ekskulFilter === 'YES' && isEkskul) ||
         (ekskulFilter === 'NO' && !isEkskul);
 
-      return matchesSearch && matchesClass && matchesGender && matchesInterest && matchesAmbassador && matchesEkskul;
+      const comp = studentComplianceMap.get(s.id);
+      const matchesCompliance =
+        complianceFilter === 'ALL' ||
+        (complianceFilter === 'NO_ELECTIVE' && comp?.isElectiveUnderMin) ||
+        comp?.status === complianceFilter;
+
+      const matchesSpecificEkskul =
+        selectedEkskul === 'ALL' ||
+        extracurricularMembers.some(
+          (m) =>
+            m.studentId === s.id &&
+            m.status === 'aktif' &&
+            (m.extracurricularId === selectedEkskul || m.extracurricularName.toLowerCase() === selectedEkskul.toLowerCase())
+        );
+
+      const matchesSpecificAmbassador =
+        selectedAmbassador === 'ALL' ||
+        ambassadorMembers.some(
+          (m) =>
+            m.studentId === s.id &&
+            m.status === 'aktif' &&
+            (m.ambassadorTypeId === selectedAmbassador || m.ambassadorTypeName.toLowerCase() === selectedAmbassador.toLowerCase())
+        );
+
+      const matchesYear =
+        selectedAcademicYear === 'ALL' ||
+        s.academicYear === selectedAcademicYear;
+
+      return (
+        matchesSearch &&
+        matchesClass &&
+        matchesGender &&
+        matchesInterest &&
+        matchesAmbassador &&
+        matchesEkskul &&
+        matchesCompliance &&
+        matchesSpecificEkskul &&
+        matchesSpecificAmbassador &&
+        matchesYear
+      );
     });
 
     // Sorting
@@ -172,10 +248,19 @@ export const StudentListView: React.FC = () => {
     interestFilter,
     ambassadorFilter,
     ekskulFilter,
+    complianceFilter,
+    selectedEkskul,
+    selectedAmbassador,
+    selectedAcademicYear,
     sortBy,
+    isClassLocked,
+    currentUser?.assignedClass,
     mappedStudentIds,
     ambassadorStudentIds,
-    ekskulStudentIds
+    ekskulStudentIds,
+    studentComplianceMap,
+    extracurricularMembers,
+    ambassadorMembers
   ]);
 
   const totalPages = Math.ceil(filteredStudents.length / itemsPerPage) || 1;

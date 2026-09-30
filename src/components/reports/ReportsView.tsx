@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   FileBarChart2,
   Printer,
@@ -12,12 +12,19 @@ import {
   Layers,
   CheckCircle2,
   TrendingUp,
-  FileSpreadsheet
+  FileSpreadsheet,
+  ShieldCheck,
+  AlertTriangle,
+  AlertCircle,
+  ShieldAlert,
+  Search
 } from 'lucide-react';
 import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
 import { Card } from '../common/Card';
 import { Badge } from '../common/Badge';
+import { isClassMatching } from '../../utils/classUtils';
+import { validateStudentExtracurriculars, ComplianceStatus, StudentEkskulValidation, isPramukaEkskul, isTikEkskul } from '../../utils/ruleValidation';
 
 export const ReportsView: React.FC = () => {
   const {
@@ -39,8 +46,8 @@ export const ReportsView: React.FC = () => {
 
   const { isGuruKelas, currentUser } = useAuth();
 
-  // Filters
-  const [selectedReportType, setSelectedReportType] = useState<string>('duta_members');
+  // Filters state
+  const [selectedReportType, setSelectedReportType] = useState<string>('compliance_audit');
   const [filterClass, setFilterClass] = useState<string>(() => {
     if (isGuruKelas && currentUser?.assignedClass) return currentUser.assignedClass;
     return 'ALL';
@@ -54,17 +61,123 @@ export const ReportsView: React.FC = () => {
 
   const [filterAcademicYear, setFilterAcademicYear] = useState<string>(schoolProfile.currentAcademicYear);
   const [filterSemester, setFilterSemester] = useState<string>(schoolProfile.currentSemester);
+  const [filterComplianceStatus, setFilterComplianceStatus] = useState<string>('ALL');
+  const [filterEkskulId, setFilterEkskulId] = useState<string>('ALL');
+  const [filterAmbassadorId, setFilterAmbassadorId] = useState<string>('ALL');
+  const [filterParticipationStatus, setFilterParticipationStatus] = useState<string>('ALL');
+  const [searchQuery, setSearchQuery] = useState<string>('');
 
   const reportTypes = [
-    { id: 'duta_members', label: '1. Data Anggota Duta Sekolah', icon: Award },
-    { id: 'duta_activity', label: '2. Keaktifan & Program Duta', icon: Sparkles },
-    { id: 'talent_mapping', label: '3. Pemetaan Bakat & Minat Murid', icon: Sparkles },
-    { id: 'ekskul_participation', label: '4. Keikutsertaan Ekstrakurikuler', icon: Layers },
+    { id: 'compliance_audit', label: '1. Audit Kepatuhan Ekskul & Duta Sekolah', icon: ShieldCheck },
+    { id: 'ekskul_participation', label: '2. Keikutsertaan Ekstrakurikuler', icon: Layers },
+    { id: 'duta_members', label: '3. Data Anggota & Riwayat Duta Sekolah', icon: Award },
+    { id: 'talent_mapping', label: '4. Pemetaan Bakat & Minat Murid', icon: Sparkles },
     { id: 'attendance_recap', label: '5. Rekapitulasi Presensi Kegiatan', icon: Calendar },
     { id: 'portfolio_achievements', label: '6. Portofolio & Prestasi Murid', icon: Award },
     { id: 'participation_equity', label: '7. Pemerataan Kesempatan Murid', icon: Users },
     { id: 'school_program_summary', label: '8. Rekap Perkembangan Program Sekolah', icon: TrendingUp },
   ];
+
+  const maxElective = schoolProfile.maxElectiveExtracurricular || 2;
+
+  // Pre-calculate compliance and membership data for all students
+  const studentAuditList = useMemo(() => {
+    return students.map((s) => {
+      const validation = validateStudentExtracurriculars(
+        s,
+        extracurricularMembers,
+        maxElective,
+        filterAcademicYear || schoolProfile.currentAcademicYear
+      );
+
+      const activeAmbassador = ambassadorMembers.find(
+        (m) =>
+          m.studentId === s.id &&
+          m.status === 'aktif' &&
+          (!filterAcademicYear || m.assignedYear === filterAcademicYear)
+      );
+
+      const allAmbassadorList = ambassadorMembers.filter((m) => m.studentId === s.id);
+      const studentEkskuls = extracurricularMembers.filter(
+        (m) => m.studentId === s.id && m.status === 'aktif'
+      );
+
+      return {
+        student: s,
+        validation,
+        activeAmbassador,
+        allAmbassadorList,
+        studentEkskuls
+      };
+    });
+  }, [students, extracurricularMembers, ambassadorMembers, maxElective, filterAcademicYear, schoolProfile.currentAcademicYear]);
+
+  // Filter students for the compliance audit
+  const filteredAuditList = useMemo(() => {
+    return studentAuditList.filter((item) => {
+      const s = item.student;
+      const v = item.validation;
+
+      // Class filter
+      if (filterClass !== 'ALL' && !isClassMatching(s.classId, filterClass)) {
+        return false;
+      }
+
+      // Search query filter
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase().trim();
+        const matchesName = s.fullName.toLowerCase().includes(q);
+        const matchesNis = (s.nis || '').includes(q) || (s.nisn || '').includes(q);
+        const matchesClass = s.classId.toLowerCase().includes(q);
+        if (!matchesName && !matchesNis && !matchesClass) return false;
+      }
+
+      // Compliance status filter
+      if (filterComplianceStatus !== 'ALL') {
+        if (filterComplianceStatus === 'MEMENUHI' && v.status !== 'Memenuhi Ketentuan') return false;
+        if (filterComplianceStatus === 'BELUM_MEMENUHI' && v.status !== 'Belum Memenuhi') return false;
+        if (filterComplianceStatus === 'MELEBIHI' && v.status !== 'Melebihi Batas') return false;
+        if (filterComplianceStatus === 'PENGECUALIAN' && v.status !== 'Pengecualian') return false;
+        if (filterComplianceStatus === 'NO_ELECTIVE' && !v.isElectiveUnderMin) return false;
+        if (filterComplianceStatus === 'MISSING_COMPULSORY' && v.isCompulsoryComplete) return false;
+      }
+
+      // Extracurricular filter
+      if (filterEkskulId !== 'ALL') {
+        const hasEkskul = item.studentEkskuls.some(
+          (m) => m.extracurricularId === filterEkskulId || m.extracurricularName.toLowerCase() === filterEkskulId.toLowerCase()
+        );
+        if (!hasEkskul) return false;
+      }
+
+      // Ambassador filter
+      if (filterAmbassadorId !== 'ALL') {
+        const hasAmbassador = item.allAmbassadorList.some(
+          (m) => m.ambassadorTypeId === filterAmbassadorId || m.ambassadorTypeCode === filterAmbassadorId
+        );
+        if (!hasAmbassador) return false;
+      }
+
+      return true;
+    });
+  }, [studentAuditList, filterClass, searchQuery, filterComplianceStatus, filterEkskulId, filterAmbassadorId]);
+
+  // Scoped metrics for compliance
+  const scopedForMetrics = useMemo(() => {
+    return studentAuditList.filter((item) => {
+      if (filterClass !== 'ALL') return isClassMatching(item.student.classId, filterClass);
+      return true;
+    });
+  }, [studentAuditList, filterClass]);
+
+  const countTotal = scopedForMetrics.length;
+  const countMemenuhi = scopedForMetrics.filter((i) => i.validation.status === 'Memenuhi Ketentuan').length;
+  const countBelumMemenuhi = scopedForMetrics.filter((i) => i.validation.status === 'Belum Memenuhi').length;
+  const countMelebihiBatas = scopedForMetrics.filter((i) => i.validation.status === 'Melebihi Batas').length;
+  const countPengecualian = scopedForMetrics.filter((i) => i.validation.status === 'Pengecualian').length;
+  const countNoElective = scopedForMetrics.filter((i) => i.validation.isElectiveUnderMin).length;
+  const countMissingCompulsory = scopedForMetrics.filter((i) => !i.validation.isCompulsoryComplete).length;
+  const percentPatuh = countTotal > 0 ? Math.round((countMemenuhi / countTotal) * 100) : 0;
 
   const handlePrint = () => {
     window.print();
@@ -75,32 +188,85 @@ export const ReportsView: React.FC = () => {
     let rows: string[][] = [];
     let filename = `laporan_sekar_talenta_${selectedReportType}.csv`;
 
-    if (selectedReportType === 'duta_members') {
+    if (selectedReportType === 'compliance_audit') {
+      headers = [
+        'No',
+        'Nama Murid',
+        'NISN',
+        'Kelas',
+        'Tingkat',
+        'Status Kepatuhan Aturan',
+        'Ekskul Wajib Terpenuhi',
+        'Ekskul Wajib Kurang',
+        'Jumlah Pilihan Diikuti',
+        'Batas Maks Pilihan',
+        'Daftar Ekskul Pilihan',
+        'Status Duta Aktif',
+        'Memiliki Pengecualian',
+        'Alasan Pengecualian / Evaluasi'
+      ];
+      rows = filteredAuditList.map((item, idx) => {
+        const s = item.student;
+        const v = item.validation;
+        return [
+          String(idx + 1),
+          `"${s.fullName}"`,
+          `"${s.nisn}"`,
+          `"${s.classId}"`,
+          String(v.gradeLevel),
+          `"${v.status}"`,
+          `"${v.compulsoryJoined.map((c) => c.extracurricularName).join('; ') || 'None'}"`,
+          `"${v.compulsoryMissingNames.join('; ') || 'Lengkap'}"`,
+          String(v.electiveCount),
+          String(v.maxElectiveAllowed),
+          `"${v.electiveJoined.map((e) => e.extracurricularName).join('; ') || 'Belum Ada'}"`,
+          `"${item.activeAmbassador ? `${item.activeAmbassador.ambassadorTypeName} (${item.activeAmbassador.roleTitle || 'Anggota'})` : 'Tidak Aktif'}"`,
+          v.hasException ? 'Ya' : 'Tidak',
+          `"${v.reasons.concat(v.exceptionReasons).join(' | ')}"`
+        ];
+      });
+    } else if (selectedReportType === 'duta_members') {
       headers = ['ID', 'Nama Murid', 'Kelas', 'NIS', 'Bidang Duta', 'Peran Khusus', 'Status', 'Tahun Penugasan', 'Pembina'];
-      rows = ambassadorMembers.map((m) => [
-        m.id,
-        `"${m.studentName}"`,
-        `"${m.classId}"`,
-        `"${m.studentNis}"`,
-        `"${m.ambassadorTypeName}"`,
-        `"${m.roleTitle || ''}"`,
-        m.status,
-        m.assignedYear,
-        `"${m.coachName || ''}"`
-      ]);
+      rows = ambassadorMembers
+        .filter((m) => {
+          if (filterClass !== 'ALL' && !isClassMatching(m.classId, filterClass)) return false;
+          if (filterAmbassadorId !== 'ALL' && m.ambassadorTypeId !== filterAmbassadorId && m.ambassadorTypeCode !== filterAmbassadorId) return false;
+          if (filterParticipationStatus !== 'ALL' && m.status !== filterParticipationStatus) return false;
+          if (filterAcademicYear && m.assignedYear && m.assignedYear !== filterAcademicYear) return false;
+          return true;
+        })
+        .map((m, idx) => [
+          String(idx + 1),
+          `"${m.studentName}"`,
+          `"${m.classId}"`,
+          `"${m.studentNis}"`,
+          `"${m.ambassadorTypeName}"`,
+          `"${m.roleTitle || ''}"`,
+          m.status,
+          m.assignedYear,
+          `"${m.coachName || ''}"`
+        ]);
     } else if (selectedReportType === 'ekskul_participation') {
-      headers = ['ID', 'Nama Murid', 'Kelas', 'Ekstrakurikuler', 'Kehadiran %', 'Nilai Rapor', 'Deskripsi Capaian Rapor', 'Penilai', 'Status'];
-      rows = extracurricularMembers.map((m) => [
-        m.id,
-        `"${m.studentName}"`,
-        `"${m.classId}"`,
-        `"${m.extracurricularName}"`,
-        `${m.attendancePercentage || 100}%`,
-        `"${m.grade || 'Belum Dinilai'}"`,
-        `"${m.reportDescription || ''}"`,
-        `"${m.evaluatedBy || ''}"`,
-        m.status
-      ]);
+      headers = ['No', 'Nama Murid', 'Kelas', 'Ekstrakurikuler', 'Kehadiran %', 'Nilai Rapor', 'Deskripsi Capaian Rapor', 'Penilai', 'Status', 'Dispensasi'];
+      rows = extracurricularMembers
+        .filter((m) => {
+          if (filterClass !== 'ALL' && !isClassMatching(m.classId, filterClass)) return false;
+          if (filterEkskulId !== 'ALL' && m.extracurricularId !== filterEkskulId && m.extracurricularName.toLowerCase() !== filterEkskulId.toLowerCase()) return false;
+          if (filterParticipationStatus !== 'ALL' && m.status !== filterParticipationStatus) return false;
+          return true;
+        })
+        .map((m, idx) => [
+          String(idx + 1),
+          `"${m.studentName}"`,
+          `"${m.classId}"`,
+          `"${m.extracurricularName}"`,
+          `${m.attendancePercentage || 100}%`,
+          `"${m.grade || 'Belum Dinilai'}"`,
+          `"${m.reportDescription || ''}"`,
+          `"${m.evaluatedBy || ''}"`,
+          m.status,
+          m.isException ? `"${m.exceptionReason || 'Izin Resmi'}"` : 'Tidak'
+        ]);
     } else if (selectedReportType === 'talent_mapping') {
       headers = ['ID', 'Nama Murid', 'Kelas', 'Kategori Minat', 'Topik Khusus', 'Tingkat Ketertarikan', 'Aktivitas Diminati', 'Tahun/Semester'];
       rows = studentInterests.map((i) => [
@@ -143,10 +309,10 @@ export const ReportsView: React.FC = () => {
         <div>
           <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2">
             <FileBarChart2 className="w-6 h-6 text-emerald-700" />
-            Laporan & Analisis Data Perkembangan Murid
+            Laporan & Analisis Kepatuhan Aturan
           </h2>
           <p className="text-xs text-slate-500">
-            Pusat laporan evaluasi, rekapitulasi Duta Sekolah, ekskul, presensi, dan portofolio UPT SDN Karanganyar.
+            Monitoring audit keikutsertaan ekstrakurikuler wajib, kuota pilihan, penugasan Duta, dan rekapitulasi capaian.
           </p>
         </div>
 
@@ -155,23 +321,23 @@ export const ReportsView: React.FC = () => {
             onClick={handleExportCsv}
             className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 text-xs font-bold shadow-2xs transition-all active:scale-95"
           >
-            <Download className="w-4 h-4 text-emerald-700" /> Ekspor Spreadsheet
+            <Download className="w-4 h-4 text-emerald-700" /> Ekspor Spreadsheet (CSV)
           </button>
           <button
             onClick={handlePrint}
             className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold shadow-xs active:scale-95"
           >
-            <Printer className="w-4 h-4" /> Cetak Laporan (PDF)
+            <Printer className="w-4 h-4" /> Cetak Laporan Resmi (PDF)
           </button>
         </div>
       </div>
 
-      {/* Filter Card */}
-      <Card className="p-4">
-        <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+      {/* Main Filter Section */}
+      <Card className="p-4 space-y-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           <div>
-            <label className="block text-[11px] font-bold text-slate-500 uppercase mb-1">
-              Pilih Format Laporan:
+            <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">
+              Format Laporan:
             </label>
             <select
               value={selectedReportType}
@@ -187,15 +353,16 @@ export const ReportsView: React.FC = () => {
           </div>
 
           <div>
-            <label className="block text-[11px] font-bold text-slate-500 uppercase mb-1">
+            <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">
               Rombongan Belajar (Kelas):
             </label>
             <select
               value={filterClass}
               onChange={(e) => setFilterClass(e.target.value)}
+              disabled={isGuruKelas && !!currentUser?.assignedClass}
               className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-emerald-600 font-medium"
             >
-              <option value="ALL">Semua Kelas (1A - 6B)</option>
+              <option value="ALL">Semua Rombel (1A - 6B)</option>
               {classes.map((c) => (
                 <option key={c.id} value={c.name}>
                   {c.name}
@@ -205,7 +372,7 @@ export const ReportsView: React.FC = () => {
           </div>
 
           <div>
-            <label className="block text-[11px] font-bold text-slate-500 uppercase mb-1">
+            <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">
               Tahun Pelajaran:
             </label>
             <input
@@ -217,24 +384,194 @@ export const ReportsView: React.FC = () => {
           </div>
 
           <div>
-            <label className="block text-[11px] font-bold text-slate-500 uppercase mb-1">
-              Semester:
+            <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">
+              Cari Nama Murid / NISN:
             </label>
-            <select
-              value={filterSemester}
-              onChange={(e) => setFilterSemester(e.target.value)}
-              className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-emerald-600 font-medium"
-            >
-              <option value="Ganjil">Semester Ganjil</option>
-              <option value="Genap">Semester Genap</option>
-            </select>
+            <div className="relative">
+              <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-slate-400" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Cari murid..."
+                className="w-full pl-8 pr-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-emerald-600 font-medium"
+              />
+            </div>
           </div>
+        </div>
+
+        {/* Secondary Filter Row: Filters based on report selection */}
+        <div className="pt-3 border-t border-slate-100 grid grid-cols-1 sm:grid-cols-3 gap-3">
+          {selectedReportType === 'compliance_audit' && (
+            <div>
+              <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">
+                Status Kepatuhan Aturan:
+              </label>
+              <select
+                value={filterComplianceStatus}
+                onChange={(e) => setFilterComplianceStatus(e.target.value)}
+                className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-emerald-600 font-semibold"
+              >
+                <option value="ALL">Semua Status Kepatuhan</option>
+                <option value="MEMENUHI">✓ Memenuhi Ketentuan</option>
+                <option value="BELUM_MEMENUHI">⚠️ Belum Memenuhi (Umum)</option>
+                <option value="NO_ELECTIVE">🎯 Belum Memilih Ekskul Pilihan (0)</option>
+                <option value="MISSING_COMPULSORY">⛺ Belum Mengikuti Ekskul Wajib</option>
+                <option value="MELEBIHI">⛔ Melebihi Batas Maksimal (&gt;{maxElective})</option>
+                <option value="PENGECUALIAN">🛡️ Pengecualian / Dispensasi Khusus</option>
+              </select>
+            </div>
+          )}
+
+          {(selectedReportType === 'compliance_audit' || selectedReportType === 'ekskul_participation') && (
+            <div>
+              <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">
+                Filter Ekstrakurikuler:
+              </label>
+              <select
+                value={filterEkskulId}
+                onChange={(e) => setFilterEkskulId(e.target.value)}
+                className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-emerald-600 font-medium"
+              >
+                <option value="ALL">Semua Ekstrakurikuler</option>
+                {extracurriculars.map((e) => {
+                  const isWajib = isPramukaEkskul(e.id) || isPramukaEkskul(e.name) || isTikEkskul(e.id) || isTikEkskul(e.name);
+                  return (
+                    <option key={e.id} value={e.id}>
+                      {e.name} ({isWajib ? 'Wajib Tingkat Tertentu' : 'Pilihan'})
+                    </option>
+                  );
+                })}
+              </select>
+            </div>
+          )}
+
+          {(selectedReportType === 'compliance_audit' || selectedReportType === 'duta_members') && (
+            <div>
+              <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">
+                Filter Jenis Duta Sekolah:
+              </label>
+              <select
+                value={filterAmbassadorId}
+                onChange={(e) => setFilterAmbassadorId(e.target.value)}
+                className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-emerald-600 font-medium"
+              >
+                <option value="ALL">Semua Jenis Duta</option>
+                {ambassadorTypes.map((at) => (
+                  <option key={at.id} value={at.id}>
+                    {at.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {(selectedReportType === 'ekskul_participation' || selectedReportType === 'duta_members') && (
+            <div>
+              <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">
+                Status Keanggotaan:
+              </label>
+              <select
+                value={filterParticipationStatus}
+                onChange={(e) => setFilterParticipationStatus(e.target.value)}
+                className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-emerald-600 font-medium"
+              >
+                <option value="ALL">Semua Status Keanggotaan</option>
+                <option value="aktif">Aktif</option>
+                <option value="selesai">Selesai / Purna Tugas</option>
+                <option value="alumni">Alumni</option>
+                <option value="nonaktif">Nonaktif</option>
+              </select>
+            </div>
+          )}
         </div>
       </Card>
 
-      {/* Printable Report Container */}
+      {/* Summary KPI Cards for Audit */}
+      {selectedReportType === 'compliance_audit' && (
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+          <div
+            onClick={() => setFilterComplianceStatus('ALL')}
+            className={`p-3.5 rounded-2xl bg-white border cursor-pointer transition-all ${
+              filterComplianceStatus === 'ALL'
+                ? 'border-slate-800 shadow-xs ring-2 ring-slate-800/10'
+                : 'border-slate-200 hover:border-slate-400'
+            }`}
+          >
+            <span className="text-[11px] font-bold text-slate-500 block">Total Murid</span>
+            <p className="text-xl font-black text-slate-900">{countTotal}</p>
+            <span className="text-[10px] text-slate-500 font-medium">{percentPatuh}% Memenuhi</span>
+          </div>
+
+          <div
+            onClick={() => setFilterComplianceStatus('MEMENUHI')}
+            className={`p-3.5 rounded-2xl bg-white border cursor-pointer transition-all ${
+              filterComplianceStatus === 'MEMENUHI'
+                ? 'border-emerald-600 shadow-xs ring-2 ring-emerald-500/20'
+                : 'border-emerald-200 hover:border-emerald-400'
+            }`}
+          >
+            <span className="text-[11px] font-bold text-emerald-800 flex items-center justify-between">
+              Memenuhi
+              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+            </span>
+            <p className="text-xl font-black text-emerald-700">{countMemenuhi}</p>
+            <span className="text-[10px] text-emerald-600 font-medium">✓ Wajib & Pilihan Sesuai</span>
+          </div>
+
+          <div
+            onClick={() => setFilterComplianceStatus('NO_ELECTIVE')}
+            className={`p-3.5 rounded-2xl bg-white border cursor-pointer transition-all ${
+              filterComplianceStatus === 'NO_ELECTIVE'
+                ? 'border-amber-600 shadow-xs ring-2 ring-amber-500/20'
+                : 'border-amber-200 hover:border-amber-400'
+            }`}
+          >
+            <span className="text-[11px] font-bold text-amber-900 flex items-center justify-between">
+              Belum Ada Pilihan
+              <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
+            </span>
+            <p className="text-xl font-black text-amber-800">{countNoElective}</p>
+            <span className="text-[10px] text-amber-700 font-medium">Wajib pilih min. 1</span>
+          </div>
+
+          <div
+            onClick={() => setFilterComplianceStatus('MELEBIHI')}
+            className={`p-3.5 rounded-2xl bg-white border cursor-pointer transition-all ${
+              filterComplianceStatus === 'MELEBIHI'
+                ? 'border-rose-600 shadow-xs ring-2 ring-rose-500/20'
+                : 'border-rose-200 hover:border-rose-400'
+            }`}
+          >
+            <span className="text-[11px] font-bold text-rose-900 flex items-center justify-between">
+              Melebihi Batas
+              <AlertCircle className="w-3.5 h-3.5 text-rose-600" />
+            </span>
+            <p className="text-xl font-black text-rose-800">{countMelebihiBatas}</p>
+            <span className="text-[10px] text-rose-600 font-medium">&gt; {maxElective} Ekskul Pilihan</span>
+          </div>
+
+          <div
+            onClick={() => setFilterComplianceStatus('PENGECUALIAN')}
+            className={`p-3.5 rounded-2xl bg-white border cursor-pointer transition-all ${
+              filterComplianceStatus === 'PENGECUALIAN'
+                ? 'border-purple-600 shadow-xs ring-2 ring-purple-500/20'
+                : 'border-purple-200 hover:border-purple-400'
+            }`}
+          >
+            <span className="text-[11px] font-bold text-purple-900 flex items-center justify-between">
+              Dispensasi Khusus
+              <ShieldAlert className="w-3.5 h-3.5 text-purple-600" />
+            </span>
+            <p className="text-xl font-black text-purple-800">{countPengecualian}</p>
+            <span className="text-[10px] text-purple-600 font-medium">Izin resmi tercatat</span>
+          </div>
+        </div>
+      )}
+
+      {/* Printable Report Document Container */}
       <Card className="p-6 sm:p-8 space-y-6 border-slate-300 bg-white" id="printable-report">
-        {/* Official Header Kop Laporan */}
+        {/* Official Kop Surat Header */}
         <div className="border-b-2 border-slate-900 pb-4 text-center space-y-1">
           <p className="text-xs font-bold uppercase tracking-widest text-slate-600">
             PEMERINTAH KOTA PASURUAN • DINAS PENDIDIKAN DAN KEBUDAYAAN
@@ -250,8 +587,8 @@ export const ReportsView: React.FC = () => {
           </p>
         </div>
 
-        {/* Report Metadata */}
-        <div className="flex flex-wrap items-center justify-between text-xs text-slate-600 pb-2 border-b border-slate-100">
+        {/* Report Metadata Info */}
+        <div className="flex flex-wrap items-center justify-between text-xs text-slate-600 pb-2 border-b border-slate-100 gap-2">
           <div>
             <span>Format: </span>
             <strong className="text-slate-900 capitalize">
@@ -259,57 +596,151 @@ export const ReportsView: React.FC = () => {
             </strong>
           </div>
           <div>
-            <span>Tahun Ajaran / Semester: </span>
-            <strong className="text-slate-900">
-              {filterAcademicYear} ({filterSemester})
-            </strong>
+            <span>Tahun Pelajaran: </span>
+            <strong className="text-slate-900">{filterAcademicYear}</strong> • Semester:{' '}
+            <strong className="text-slate-900">{filterSemester}</strong>
           </div>
           <div>
-            <span>Filter Rombel: </span>
+            <span>Rombongan Belajar: </span>
             <strong className="text-slate-900">
-              {filterClass === 'ALL' ? 'Semua Kelas' : filterClass}
+              {filterClass === 'ALL' ? 'Semua Rombel' : filterClass}
             </strong>
           </div>
         </div>
 
-        {/* Report Content Table based on Selected Type */}
-        {selectedReportType === 'duta_members' && (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs border-collapse">
-              <thead>
-                <tr className="bg-slate-100 border-b border-slate-300 text-slate-700 font-bold uppercase text-[10px]">
-                  <th className="p-3">No</th>
-                  <th className="p-3">Nama Murid</th>
-                  <th className="p-3">Kelas</th>
-                  <th className="p-3">Bidang Duta</th>
-                  <th className="p-3">Peran Penugasan</th>
-                  <th className="p-3">Pembina</th>
-                  <th className="p-3">Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-200">
-                {ambassadorMembers
-                  .filter((m) => filterClass === 'ALL' || m.classId === filterClass)
-                  .map((m, idx) => (
-                    <tr key={m.id} className="hover:bg-slate-50">
-                      <td className="p-3 font-bold text-slate-500">{idx + 1}</td>
-                      <td className="p-3 font-bold text-slate-900">{m.studentName}</td>
-                      <td className="p-3 text-slate-600">{m.classId}</td>
-                      <td className="p-3 font-semibold text-purple-900">{m.ambassadorTypeName}</td>
-                      <td className="p-3 text-slate-700">{m.roleTitle || 'Anggota Tim'}</td>
-                      <td className="p-3 text-slate-600">{m.coachName || '-'}</td>
-                      <td className="p-3">
-                        <Badge variant="purple" size="sm">
-                          {m.status.toUpperCase()}
-                        </Badge>
+        {/* 1. AUDIT KEPATUHAN EKSTRAKURIKULER & DUTA TABLE */}
+        {selectedReportType === 'compliance_audit' && (
+          <div className="space-y-4">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs border-collapse">
+                <thead>
+                  <tr className="bg-slate-100 border-b border-slate-300 text-slate-700 font-bold uppercase text-[10px]">
+                    <th className="p-3">No</th>
+                    <th className="p-3">Nama Murid & NISN</th>
+                    <th className="p-3">Kelas</th>
+                    <th className="p-3">Ekskul Wajib</th>
+                    <th className="p-3">Ekskul Pilihan ({maxElective} Maks)</th>
+                    <th className="p-3">Duta Sekolah Aktif</th>
+                    <th className="p-3">Status Kepatuhan</th>
+                    <th className="p-3">Evaluasi / Alasan Dispensasi</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-200">
+                  {filteredAuditList.length === 0 ? (
+                    <tr>
+                      <td colSpan={8} className="p-8 text-center text-slate-500 text-xs">
+                        Tidak ada data murid yang sesuai kriteria filter kepatuhan saat ini.
                       </td>
                     </tr>
-                  ))}
-              </tbody>
-            </table>
+                  ) : (
+                    filteredAuditList.map((item, idx) => {
+                      const s = item.student;
+                      const v = item.validation;
+                      return (
+                        <tr key={s.id} className="hover:bg-slate-50/80">
+                          <td className="p-3 font-bold text-slate-500">{idx + 1}</td>
+                          <td className="p-3 font-bold text-slate-900">
+                            <div>{s.fullName}</div>
+                            <span className="text-[10px] text-slate-500 font-mono">NISN: {s.nisn}</span>
+                          </td>
+                          <td className="p-3 text-slate-700 font-semibold">{s.classId}</td>
+                          <td className="p-3">
+                            <div className="space-y-0.5">
+                              {v.compulsoryRequiredNames.map((wajibName) => {
+                                const isJoined = v.compulsoryJoined.some((j) =>
+                                  j.extracurricularName.toLowerCase().includes(wajibName.toLowerCase())
+                                );
+                                return (
+                                  <div key={wajibName} className="flex items-center gap-1.5 text-[11px]">
+                                    {isJoined ? (
+                                      <span className="text-emerald-700 font-bold">✓ {wajibName}</span>
+                                    ) : (
+                                      <span className="text-amber-700 font-bold">⚠️ Belum ({wajibName})</span>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </td>
+                          <td className="p-3">
+                            <div className="space-y-1">
+                              <span
+                                className={`text-[11px] font-black px-2 py-0.5 rounded-full inline-block ${
+                                  v.isElectiveUnderMin
+                                    ? 'bg-amber-100 text-amber-900 border border-amber-300'
+                                    : v.isElectiveExceeded
+                                    ? 'bg-rose-100 text-rose-900 border border-rose-300'
+                                    : 'bg-emerald-100 text-emerald-900 border border-emerald-300'
+                                }`}
+                              >
+                                {v.electiveCount} / {v.maxElectiveAllowed} Pilihan
+                              </span>
+                              {v.electiveJoined.length > 0 && (
+                                <p className="text-[10.5px] text-slate-600 leading-tight">
+                                  {v.electiveJoined.map((e) => e.extracurricularName).join(', ')}
+                                </p>
+                              )}
+                            </div>
+                          </td>
+                          <td className="p-3">
+                            {item.activeAmbassador ? (
+                              <div className="space-y-0.5">
+                                <span className="font-bold text-purple-900 text-[11px] block">
+                                  🎖️ {item.activeAmbassador.ambassadorTypeName}
+                                </span>
+                                <span className="text-[10px] text-slate-500">
+                                  {item.activeAmbassador.roleTitle || 'Anggota'} ({item.activeAmbassador.assignedYear})
+                                </span>
+                              </div>
+                            ) : (
+                              <span className="text-slate-400 text-[11px] italic">Tidak aktif Duta</span>
+                            )}
+                          </td>
+                          <td className="p-3">
+                            <span
+                              className={`px-2.5 py-1 rounded-full text-[10.5px] font-black inline-flex items-center gap-1 border ${
+                                v.status === 'Memenuhi Ketentuan'
+                                  ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
+                                  : v.status === 'Pengecualian'
+                                  ? 'bg-purple-50 text-purple-800 border-purple-300'
+                                  : v.status === 'Melebihi Batas'
+                                  ? 'bg-rose-50 text-rose-800 border-rose-300'
+                                  : 'bg-amber-50 text-amber-800 border-amber-300'
+                              }`}
+                            >
+                              {v.status === 'Memenuhi Ketentuan' ? (
+                                <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                              ) : v.status === 'Pengecualian' ? (
+                                <ShieldAlert className="w-3 h-3 text-purple-600" />
+                              ) : (
+                                <AlertTriangle className="w-3 h-3 text-amber-600" />
+                              )}
+                              {v.status}
+                            </span>
+                          </td>
+                          <td className="p-3 text-[11px] max-w-xs text-slate-600">
+                            {v.hasException && (
+                              <div className="text-purple-900 font-bold mb-0.5">
+                                🛡️ {v.exceptionReasons.join('; ')}
+                              </div>
+                            )}
+                            {v.reasons.length > 0 ? (
+                              <span className="text-slate-500">{v.reasons.join('; ')}</span>
+                            ) : (
+                              <span className="text-emerald-700 font-medium">Seluruh ketentuan terpenuhi</span>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
 
+        {/* 2. EKSTRAKURIKULER PARTICIPATION TABLE */}
         {selectedReportType === 'ekskul_participation' && (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs border-collapse">
@@ -321,13 +752,19 @@ export const ReportsView: React.FC = () => {
                   <th className="p-3">Ekstrakurikuler</th>
                   <th className="p-3">Kehadiran (%)</th>
                   <th className="p-3">Nilai Rapor</th>
-                  <th className="p-3">Deskripsi Capaian Rapor</th>
-                  <th className="p-3">Penilai</th>
+                  <th className="p-3">Deskripsi Capaian</th>
+                  <th className="p-3">Dispensasi</th>
+                  <th className="p-3">Status</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200">
                 {extracurricularMembers
-                  .filter((m) => filterClass === 'ALL' || m.classId === filterClass)
+                  .filter((m) => {
+                    if (filterClass !== 'ALL' && !isClassMatching(m.classId, filterClass)) return false;
+                    if (filterEkskulId !== 'ALL' && m.extracurricularId !== filterEkskulId && m.extracurricularName.toLowerCase() !== filterEkskulId.toLowerCase()) return false;
+                    if (filterParticipationStatus !== 'ALL' && m.status !== filterParticipationStatus) return false;
+                    return true;
+                  })
                   .map((m, idx) => (
                     <tr key={m.id} className="hover:bg-slate-50">
                       <td className="p-3 font-bold text-slate-500">{idx + 1}</td>
@@ -347,7 +784,20 @@ export const ReportsView: React.FC = () => {
                       <td className="p-3 text-slate-700 font-medium max-w-xs leading-relaxed">
                         {m.reportDescription ? `"${m.reportDescription}"` : <span className="text-slate-400 italic">-</span>}
                       </td>
-                      <td className="p-3 text-slate-500 text-[11px]">{m.evaluatedBy || '-'}</td>
+                      <td className="p-3">
+                        {m.isException ? (
+                          <span className="text-purple-700 font-bold text-[10.5px]">
+                            🛡️ {m.exceptionReason || 'Izin Dispensasi'}
+                          </span>
+                        ) : (
+                          <span className="text-slate-400 text-[10.5px]">Reguler</span>
+                        )}
+                      </td>
+                      <td className="p-3">
+                        <Badge variant={m.status === 'aktif' ? 'emerald' : 'slate'} size="sm">
+                          {m.status.toUpperCase()}
+                        </Badge>
+                      </td>
                     </tr>
                   ))}
               </tbody>
@@ -355,6 +805,53 @@ export const ReportsView: React.FC = () => {
           </div>
         )}
 
+        {/* 3. DUTA SEKOLAH MEMBERS TABLE */}
+        {selectedReportType === 'duta_members' && (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs border-collapse">
+              <thead>
+                <tr className="bg-slate-100 border-b border-slate-300 text-slate-700 font-bold uppercase text-[10px]">
+                  <th className="p-3">No</th>
+                  <th className="p-3">Nama Murid</th>
+                  <th className="p-3">Kelas</th>
+                  <th className="p-3">Bidang Duta</th>
+                  <th className="p-3">Peran Penugasan</th>
+                  <th className="p-3">Periode Tahun</th>
+                  <th className="p-3">Pembina</th>
+                  <th className="p-3">Status</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-200">
+                {ambassadorMembers
+                  .filter((m) => {
+                    if (filterClass !== 'ALL' && !isClassMatching(m.classId, filterClass)) return false;
+                    if (filterAmbassadorId !== 'ALL' && m.ambassadorTypeId !== filterAmbassadorId && m.ambassadorTypeCode !== filterAmbassadorId) return false;
+                    if (filterParticipationStatus !== 'ALL' && m.status !== filterParticipationStatus) return false;
+                    if (filterAcademicYear && m.assignedYear && m.assignedYear !== filterAcademicYear) return false;
+                    return true;
+                  })
+                  .map((m, idx) => (
+                    <tr key={m.id} className="hover:bg-slate-50">
+                      <td className="p-3 font-bold text-slate-500">{idx + 1}</td>
+                      <td className="p-3 font-bold text-slate-900">{m.studentName}</td>
+                      <td className="p-3 text-slate-600">{m.classId}</td>
+                      <td className="p-3 font-semibold text-purple-900">{m.ambassadorTypeName}</td>
+                      <td className="p-3 text-slate-700 font-medium">{m.roleTitle || 'Anggota Tim'}</td>
+                      <td className="p-3 text-slate-600 font-mono text-[11px]">{m.assignedYear}</td>
+                      <td className="p-3 text-slate-600">{m.coachName || '-'}</td>
+                      <td className="p-3">
+                        <Badge variant={m.status === 'aktif' ? 'purple' : 'slate'} size="sm">
+                          {m.status.toUpperCase()}
+                        </Badge>
+                      </td>
+                    </tr>
+                  ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {/* 4. TALENT MAPPING TABLE */}
         {selectedReportType === 'talent_mapping' && (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs border-collapse">
@@ -371,7 +868,7 @@ export const ReportsView: React.FC = () => {
               </thead>
               <tbody className="divide-y divide-slate-200">
                 {studentInterests
-                  .filter((i) => filterClass === 'ALL' || i.classId === filterClass)
+                  .filter((i) => filterClass === 'ALL' || isClassMatching(i.classId, filterClass))
                   .map((i, idx) => (
                     <tr key={i.id} className="hover:bg-slate-50">
                       <td className="p-3 font-bold text-slate-500">{idx + 1}</td>
@@ -392,6 +889,7 @@ export const ReportsView: React.FC = () => {
           </div>
         )}
 
+        {/* 5. PORTFOLIO & ACHIEVEMENTS TABLE */}
         {selectedReportType === 'portfolio_achievements' && (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs border-collapse">
@@ -408,7 +906,7 @@ export const ReportsView: React.FC = () => {
               </thead>
               <tbody className="divide-y divide-slate-200">
                 {portfolios
-                  .filter((p) => filterClass === 'ALL' || p.classId === filterClass)
+                  .filter((p) => filterClass === 'ALL' || isClassMatching(p.classId, filterClass))
                   .map((p, idx) => (
                     <tr key={p.id} className="hover:bg-slate-50">
                       <td className="p-3 font-bold text-slate-500">{idx + 1}</td>
@@ -435,7 +933,7 @@ export const ReportsView: React.FC = () => {
           </div>
         )}
 
-        {/* Generic Table Fallback for other report types */}
+        {/* 6. OTHER GENERAL ACTIVITY REPORT TABLES */}
         {['duta_activity', 'attendance_recap', 'participation_equity', 'school_program_summary'].includes(selectedReportType) && (
           <div className="space-y-4">
             <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 text-xs">
@@ -502,7 +1000,9 @@ export const ReportsView: React.FC = () => {
           </div>
 
           <div>
-            <p className="text-slate-500">Pasuruan, {new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+            <p className="text-slate-500">
+              Pasuruan, {new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+            </p>
             <p className="font-bold text-slate-800 mt-1">Koordinator Program SEKAR TALENTA</p>
             <div className="h-16" />
             <p className="font-bold text-slate-900 underline">Indartha Meiputra, S.Pd.</p>

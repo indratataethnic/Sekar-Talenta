@@ -107,6 +107,8 @@
         "status": { "type": "string", "enum": ["aktif", "selesai", "alumni"] },
         "roleTitle": { "type": "string", "maxLength": 128 },
         "reflectionNotes": { "type": "string", "maxLength": 2048 },
+        "deactivatedReason": { "type": "string", "maxLength": 1024 },
+        "exceptionReason": { "type": "string", "maxLength": 1024 },
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["id", "studentId", "ambassadorTypeId", "assignedYear", "status"]
@@ -123,9 +125,13 @@
         "studentName": { "type": "string", "maxLength": 128 },
         "classId": { "type": "string", "maxLength": 32 },
         "joinedAt": { "type": "string", "maxLength": 32 },
-        "status": { "type": "string", "enum": ["menunggu", "aktif", "nonaktif"] },
+        "status": { "type": "string", "enum": ["menunggu", "aktif", "nonaktif", "selesai", "alumni"] },
         "attendancePercentage": { "type": "string", "maxLength": 16 },
         "coachNotes": { "type": "string", "maxLength": 2048 },
+        "academicYear": { "type": "string", "maxLength": 32 },
+        "isCompulsory": { "type": "boolean" },
+        "isException": { "type": "boolean" },
+        "exceptionReason": { "type": "string", "maxLength": 1024 },
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["id", "extracurricularId", "studentId", "status"]

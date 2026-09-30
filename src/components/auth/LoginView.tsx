@@ -25,11 +25,25 @@ export const LoginView: React.FC = () => {
   
   // Selected educator role for login with password
   const [selectedRole, setSelectedRole] = useState<'super_admin' | 'guru_kelas' | 'pembina'>('super_admin');
-  const [selectedClass, setSelectedClass] = useState<string>('Kelas 4A');
+  const [selectedClass, setSelectedClass] = useState<string>(() => classes[0]?.name || 'Kelas 1 A');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errMsg, setErrMsg] = useState('');
+
+  // Sync selectedClass to valid class in list
+  React.useEffect(() => {
+    if (classes.length > 0 && !classes.some((c) => c.name === selectedClass)) {
+      const match = classes.find(
+        (c) => c.name.toLowerCase().replace(/\s+/g, '') === selectedClass.toLowerCase().replace(/\s+/g, '')
+      );
+      if (match) {
+        setSelectedClass(match.name);
+      } else {
+        setSelectedClass(classes[0].name);
+      }
+    }
+  }, [classes, selectedClass]);
 
   // Handle direct login for Murid / Orang Tua (no password needed)
   const handleMuridDirectLogin = async () => {
@@ -195,14 +209,20 @@ export const LoginView: React.FC = () => {
 
             {/* Optional Class Selector when Guru Kelas is selected */}
             {selectedRole === 'guru_kelas' && (
-              <div className="space-y-1.5 bg-blue-50/70 p-3 rounded-2xl border border-blue-200 animate-in fade-in">
-                <label className="block text-xs font-bold text-blue-900">
-                  Pilih Rombel Kelas Anda:
-                </label>
+              <div className="space-y-2 bg-blue-50/70 p-3.5 rounded-2xl border-2 border-blue-200 animate-in fade-in">
+                <div className="flex items-center justify-between">
+                  <label className="block text-xs font-bold text-blue-900 flex items-center gap-1.5">
+                    <School className="w-4 h-4 text-blue-700" />
+                    Pilih Rombel Kelas Anda:
+                  </label>
+                  <span className="text-[11px] font-extrabold text-blue-800 bg-blue-100/90 px-2 py-0.5 rounded-full border border-blue-300">
+                    {selectedClass}
+                  </span>
+                </div>
                 <select
                   value={selectedClass}
                   onChange={(e) => setSelectedClass(e.target.value)}
-                  className="w-full px-3 py-2 text-xs rounded-xl border border-blue-300 bg-white focus:outline-blue-600 font-bold text-blue-950"
+                  className="w-full px-3 py-2 text-xs rounded-xl border border-blue-300 bg-white focus:outline-blue-600 font-bold text-blue-950 shadow-2xs cursor-pointer"
                 >
                   {classes.map((c) => (
                     <option key={c.id} value={c.name}>
@@ -210,6 +230,9 @@ export const LoginView: React.FC = () => {
                     </option>
                   ))}
                 </select>
+                <p className="text-[10.5px] text-blue-700 leading-tight">
+                  Teks tombol masuk di bawah otomatis menyesuaikan ke <strong>Guru {selectedClass.toLowerCase().startsWith('kelas') ? selectedClass : `Kelas ${selectedClass}`}</strong>.
+                </p>
               </div>
             )}
 
@@ -244,7 +267,15 @@ export const LoginView: React.FC = () => {
               disabled={isLoading}
               className="w-full py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs sm:text-sm shadow-md transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
             >
-              {isLoading ? 'Memverifikasi...' : `Masuk sebagai ${selectedRole === 'super_admin' ? 'Super Admin' : selectedRole === 'guru_kelas' ? `Guru Kelas (${selectedClass})` : 'Pembina'}`}
+              {isLoading ? (
+                'Memverifikasi...'
+              ) : selectedRole === 'super_admin' ? (
+                'Masuk sebagai Super Admin'
+              ) : selectedRole === 'pembina' ? (
+                'Masuk sebagai Pembina'
+              ) : (
+                `Masuk sebagai Guru ${selectedClass.toLowerCase().startsWith('kelas') ? selectedClass : `Kelas ${selectedClass}`}`
+              )}
               <ArrowRight className="w-4 h-4" />
             </button>
           </form>

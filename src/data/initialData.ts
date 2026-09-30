@@ -29,7 +29,8 @@ export const initialSchoolProfile: SchoolProfile = {
   principalNip: '19680512 199303 1 008',
   currentAcademicYear: '2024/2025',
   currentSemester: 'Genap',
-  tagline: 'Kenali Potensi • Kembangkan Bakat • Tumbuhkan Kepemimpinan'
+  tagline: 'Kenali Potensi • Kembangkan Bakat • Tumbuhkan Kepemimpinan',
+  maxElectiveExtracurricular: 2
 };
 
 export const initialUsers: User[] = [

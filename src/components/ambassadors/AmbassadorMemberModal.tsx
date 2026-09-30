@@ -1,8 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { AlertCircle, ShieldAlert, CheckCircle2 } from 'lucide-react';
 import { Modal } from '../common/Modal';
 import { AmbassadorMember, AmbassadorType, Student } from '../../types';
 import { useData } from '../../context/DataContext';
 import { StudentSelector } from '../common/StudentSelector';
+import { checkAmbassadorAssignment } from '../../utils/ruleValidation';
 
 interface AmbassadorMemberModalProps {
   isOpen: boolean;
@@ -17,7 +19,7 @@ export const AmbassadorMemberModal: React.FC<AmbassadorMemberModalProps> = ({
   ambassadorType,
   memberToEdit,
 }) => {
-  const { students, addAmbassadorMember, updateAmbassadorMember, schoolProfile } = useData();
+  const { students, addAmbassadorMember, updateAmbassadorMember, ambassadorMembers, schoolProfile } = useData();
 
   const [selectedStudentId, setSelectedStudentId] = useState('');
   const [roleTitle, setRoleTitle] = useState('Anggota Tim Duta');
@@ -25,9 +27,11 @@ export const AmbassadorMemberModal: React.FC<AmbassadorMemberModalProps> = ({
   const [reflectionNotes, setReflectionNotes] = useState('');
   const [status, setStatus] = useState<'aktif' | 'selesai' | 'alumni'>('aktif');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
   // Synchronize state on modal open or memberToEdit changes
   useEffect(() => {
+    setErrorMessage('');
     if (memberToEdit) {
       setSelectedStudentId(memberToEdit.studentId);
       setRoleTitle(memberToEdit.roleTitle || 'Anggota Tim Duta');
@@ -43,8 +47,27 @@ export const AmbassadorMemberModal: React.FC<AmbassadorMemberModalProps> = ({
     }
   }, [memberToEdit, isOpen, students, schoolProfile.currentAcademicYear]);
 
+  // Validation: Only 1 active ambassador role per student in the same period
+  const validation = useMemo(() => {
+    if (!selectedStudentId) return { isAllowed: true };
+    // If editing and status is not changing to active, allow
+    if (memberToEdit && status !== 'aktif') return { isAllowed: true };
+    return checkAmbassadorAssignment(
+      selectedStudentId,
+      assignedYear,
+      ambassadorMembers,
+      memberToEdit?.id
+    );
+  }, [selectedStudentId, assignedYear, ambassadorMembers, memberToEdit, status]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setErrorMessage('');
+
+    if (!memberToEdit && !validation.isAllowed) {
+      setErrorMessage(validation.errorMessage || 'Murid sudah memiliki keanggotaan Duta aktif pada periode ini.');
+      return;
+    }
 
     setIsSubmitting(true);
     try {
@@ -53,12 +76,13 @@ export const AmbassadorMemberModal: React.FC<AmbassadorMemberModalProps> = ({
           roleTitle,
           assignedYear,
           reflectionNotes,
-          status
+          status,
+          endDate: status !== 'aktif' ? new Date().toISOString().split('T')[0] : undefined
         });
       } else {
         const student = students.find((s) => s.id === selectedStudentId);
         if (!student) {
-          alert('Silakan pilih murid terlebih dahulu.');
+          setErrorMessage('Silakan pilih murid terlebih dahulu.');
           setIsSubmitting(false);
           return;
         }
@@ -80,6 +104,9 @@ export const AmbassadorMemberModal: React.FC<AmbassadorMemberModalProps> = ({
         });
       }
       onClose();
+    } catch (err: any) {
+      console.error('Error assigning ambassador member:', err);
+      setErrorMessage(err?.message || 'Gagal menyimpan data keanggotaan Duta.');
     } finally {
       setIsSubmitting(false);
     }
@@ -94,6 +121,13 @@ export const AmbassadorMemberModal: React.FC<AmbassadorMemberModalProps> = ({
       maxWidth="md"
     >
       <form onSubmit={handleSubmit} className="space-y-4">
+        {errorMessage && (
+          <div className="p-3 bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold rounded-xl flex items-start gap-2">
+            <ShieldAlert className="w-4 h-4 text-rose-600 flex-shrink-0 mt-0.5" />
+            <div>{errorMessage}</div>
+          </div>
+        )}
+
         {!memberToEdit ? (
           <StudentSelector
             selectedStudentId={selectedStudentId}
@@ -105,6 +139,26 @@ export const AmbassadorMemberModal: React.FC<AmbassadorMemberModalProps> = ({
           <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
             <p className="text-xs font-bold text-slate-800">{memberToEdit.studentName}</p>
             <p className="text-[11px] text-slate-500">{memberToEdit.classId} • NIS: {memberToEdit.studentNis}</p>
+          </div>
+        )}
+
+        {/* Peringatan jika murid sudah aktif di duta lain pada periode yang sama */}
+        {!memberToEdit && !validation.isAllowed && (
+          <div className="p-3.5 bg-rose-50 border-2 border-rose-200 rounded-2xl space-y-2">
+            <div className="flex items-start gap-2.5">
+              <AlertCircle className="w-5 h-5 text-rose-600 flex-shrink-0 mt-0.5" />
+              <div className="space-y-1">
+                <h4 className="text-xs font-black text-rose-900">
+                  Pelanggaran Aturan Keanggotaan Duta Sekolah
+                </h4>
+                <p className="text-[11px] text-rose-800 leading-relaxed">
+                  {validation.errorMessage}
+                </p>
+              </div>
+            </div>
+            <p className="text-[10px] text-rose-700 font-medium pl-7">
+              💡 Saran: Jika masa tugas murid pada duta sebelumnya telah selesai, ubah status keanggotaan lamanya menjadi <strong>"Selesai / Alumni"</strong> terlebih dahulu agar dapat didaftarkan ke Duta baru.
+            </p>
           </div>
         )}
 
@@ -172,10 +226,18 @@ export const AmbassadorMemberModal: React.FC<AmbassadorMemberModalProps> = ({
           </button>
           <button
             type="submit"
-            disabled={isSubmitting}
-            className="px-5 py-2 text-xs font-bold text-white bg-emerald-700 hover:bg-emerald-800 rounded-xl shadow-xs active:scale-95 disabled:opacity-50"
+            disabled={isSubmitting || (!memberToEdit && !validation.isAllowed)}
+            className={`px-5 py-2 text-xs font-bold text-white rounded-xl shadow-xs active:scale-95 transition-all ${
+              !memberToEdit && !validation.isAllowed
+                ? 'bg-rose-600 hover:bg-rose-700 disabled:opacity-50 cursor-not-allowed'
+                : 'bg-emerald-700 hover:bg-emerald-800 disabled:opacity-50'
+            }`}
           >
-            {isSubmitting ? 'Menyimpan...' : 'Simpan Penugasan'}
+            {isSubmitting
+              ? 'Menyimpan...'
+              : !memberToEdit && !validation.isAllowed
+              ? 'Aturan Duta Terlanggar'
+              : 'Simpan Penugasan'}
           </button>
         </div>
       </form>

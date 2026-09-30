@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   User,
   Sparkles,
@@ -22,7 +22,10 @@ import {
   TrendingUp,
   BookmarkCheck,
   CheckCircle2,
-  FileText
+  FileText,
+  AlertTriangle,
+  History,
+  ShieldAlert
 } from 'lucide-react';
 import { Student } from '../../types';
 import { useData } from '../../context/DataContext';
@@ -31,6 +34,7 @@ import { Card } from '../common/Card';
 import { Badge } from '../common/Badge';
 import { StudentProfileCardModal } from './StudentProfileCardModal';
 import { ExtracurricularRegisterModal } from '../extracurriculars/ExtracurricularRegisterModal';
+import { validateStudentExtracurriculars } from '../../utils/ruleValidation';
 
 interface StudentDetailViewProps {
   student: Student;
@@ -67,10 +71,22 @@ export const StudentDetailView: React.FC<StudentDetailViewProps> = ({ student, o
   // Student specific data queries
   const interests = studentInterests.filter((i) => i.studentId === student.id);
   const myAmbassadors = ambassadorMembers.filter((m) => m.studentId === student.id);
+  const activeAmbassadors = myAmbassadors.filter((m) => m.status === 'aktif');
+  const pastAmbassadors = myAmbassadors.filter((m) => m.status !== 'aktif');
   const myEkskuls = extracurricularMembers.filter((m) => m.studentId === student.id);
   const myPortfolios = portfolios.filter((p) => p.studentId === student.id);
   const myAchievements = achievements.filter((a) => a.studentId === student.id);
   const myObservations = teacherObservations.filter((o) => o.studentId === student.id);
+
+  // Extracurricular Rule Validation
+  const compliance = useMemo(() => {
+    return validateStudentExtracurriculars(
+      student,
+      extracurricularMembers,
+      schoolProfile.maxElectiveExtracurricular || 2,
+      schoolProfile.currentAcademicYear
+    );
+  }, [student, extracurricularMembers, schoolProfile.maxElectiveExtracurricular, schoolProfile.currentAcademicYear]);
 
   // Attendance history
   const attendedActivities: { activityTitle: string; date: string; status: string; type: string }[] = [];
@@ -167,15 +183,29 @@ export const StudentDetailView: React.FC<StudentDetailViewProps> = ({ student, o
               <span className="px-2.5 py-0.5 rounded-full bg-emerald-800/80 border border-emerald-600 text-emerald-100 text-xs font-semibold">
                 TP {student.academicYear} • Semester {schoolProfile.currentSemester}
               </span>
-              {myAmbassadors.length > 0 && (
+              {/* Status Kepatuhan Aturan Badge */}
+              <span
+                className={`px-2.5 py-0.5 rounded-full text-[10.5px] font-extrabold border shadow-2xs ${
+                  compliance.status === 'Memenuhi Ketentuan'
+                    ? 'bg-emerald-500/25 text-emerald-200 border-emerald-400'
+                    : compliance.status === 'Pengecualian'
+                    ? 'bg-purple-500/25 text-purple-200 border-purple-400'
+                    : compliance.status === 'Melebihi Batas'
+                    ? 'bg-rose-500/25 text-rose-200 border-rose-400'
+                    : 'bg-amber-500/25 text-amber-200 border-amber-400'
+                }`}
+              >
+                📋 Aturan: {compliance.status}
+              </span>
+              {activeAmbassadors.length > 0 && (
                 <span className="px-2 py-0.5 rounded-full bg-purple-900/80 text-purple-200 text-[10px] font-bold border border-purple-400/40">
-                  🎖️ {myAmbassadors[0].ambassadorTypeName}
+                  🎖️ {activeAmbassadors[0].ambassadorTypeName}
                 </span>
               )}
             </div>
             <h2 className="text-xl sm:text-2xl font-black text-white">{student.fullName}</h2>
             <p className="text-xs text-emerald-200">
-              NISN: <span className="font-mono font-bold text-white">{student.nisn}</span> • Gender: {student.gender === 'L' ? 'Laki-laki' : 'Perempuan'}
+              NISN: <span className="font-mono font-bold text-white">{student.nisn}</span> • Gender: {student.gender === 'L' ? 'Laki-laki' : 'Perempuan'} • Ekskul: <strong className="text-white">{compliance.compulsoryJoined.length} Wajib</strong>, <strong className="text-white">{compliance.electiveCount}/{compliance.maxElectiveAllowed} Pilihan</strong>
             </p>
           </div>
         </div>
@@ -277,6 +307,115 @@ export const StudentDetailView: React.FC<StudentDetailViewProps> = ({ student, o
               </div>
             </div>
           </Card>
+
+          {/* Card: Status Kepatuhan Aturan Ekstrakurikuler & Duta */}
+          <Card className="md:col-span-2 space-y-4 border-2 border-emerald-200/80 bg-gradient-to-br from-white via-emerald-50/20 to-teal-50/30">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-emerald-100 pb-3">
+              <div className="flex items-center gap-2">
+                <ShieldCheck className="w-5 h-5 text-emerald-700" />
+                <div>
+                  <h3 className="text-sm font-black text-slate-900">
+                    Status Kepatuhan Aturan Ekstrakurikuler & Duta
+                  </h3>
+                  <p className="text-[11px] text-slate-500">
+                    Penilaian otomatis berdasarkan tingkat {student.classId} dan Tahun Pelajaran {schoolProfile.currentAcademicYear}
+                  </p>
+                </div>
+              </div>
+
+              <span
+                className={`px-3 py-1 rounded-full text-xs font-black border shadow-xs inline-flex items-center gap-1.5 ${
+                  compliance.status === 'Memenuhi Ketentuan'
+                    ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                    : compliance.status === 'Pengecualian'
+                    ? 'bg-purple-100 text-purple-800 border-purple-300'
+                    : compliance.status === 'Melebihi Batas'
+                    ? 'bg-rose-100 text-rose-800 border-rose-300'
+                    : 'bg-amber-100 text-amber-800 border-amber-300'
+                }`}
+              >
+                {compliance.status === 'Memenuhi Ketentuan' ? (
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                ) : compliance.status === 'Pengecualian' ? (
+                  <ShieldAlert className="w-4 h-4 text-purple-600" />
+                ) : (
+                  <AlertTriangle className="w-4 h-4 text-amber-600" />
+                )}
+                {compliance.status}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+              <div className="p-3 bg-white rounded-xl border border-slate-200 space-y-1">
+                <span className="text-[10.5px] font-bold text-slate-500 block uppercase">1. Kewajiban Ekskul Kelas</span>
+                <p className="text-xs font-black text-slate-800">
+                  {compliance.compulsoryRequiredNames.join(' & ')}
+                </p>
+                <p className="text-[10.5px] text-slate-500">
+                  Status: {compliance.isCompulsoryComplete ? (
+                    <strong className="text-emerald-700">✓ Lengkap ({compliance.compulsoryJoined.length} Diikuti)</strong>
+                  ) : (
+                    <strong className="text-amber-700">⚠️ Kurang: {compliance.compulsoryMissingNames.join(', ')}</strong>
+                  )}
+                </p>
+              </div>
+
+              <div className="p-3 bg-white rounded-xl border border-slate-200 space-y-1">
+                <span className="text-[10.5px] font-bold text-slate-500 block uppercase">2. Ekskul Pilihan</span>
+                <p className="text-xs font-black text-slate-800">
+                  {compliance.electiveCount} dari Maksimal {compliance.maxElectiveAllowed}
+                </p>
+                <p className="text-[10.5px] text-slate-500">
+                  {compliance.isElectiveUnderMin ? (
+                    <strong className="text-amber-700">⚠️ Belum memilih (Min. 1)</strong>
+                  ) : compliance.isElectiveExceeded ? (
+                    <strong className="text-rose-700">⛔ Melebihi Kuota Maksimal</strong>
+                  ) : (
+                    <strong className="text-emerald-700">✓ Sesuai Kuota Pilihan</strong>
+                  )}
+                </p>
+              </div>
+
+              <div className="p-3 bg-white rounded-xl border border-slate-200 space-y-1">
+                <span className="text-[10.5px] font-bold text-slate-500 block uppercase">3. Keanggotaan Duta</span>
+                <p className="text-xs font-black text-slate-800 truncate">
+                  {activeAmbassadors.length > 0 ? activeAmbassadors[0].ambassadorTypeName : 'Belum Ada Duta Aktif'}
+                </p>
+                <p className="text-[10.5px] text-slate-500">
+                  {activeAmbassadors.length > 0 ? (
+                    <strong className="text-purple-700">✓ 1 Duta Aktif ({activeAmbassadors[0].assignedYear})</strong>
+                  ) : (
+                    <span>Tersedia untuk ditugaskan</span>
+                  )}
+                  {pastAmbassadors.length > 0 && ` • ${pastAmbassadors.length} Riwayat`}
+                </p>
+              </div>
+            </div>
+
+            {compliance.reasons.length > 0 && (
+              <div className="p-3 rounded-xl bg-amber-50/80 border border-amber-200 text-xs text-amber-900 space-y-1">
+                <span className="font-bold block text-[11px] text-amber-950">Catatan Evaluasi Sistem:</span>
+                <ul className="list-disc list-inside space-y-0.5 text-[11px]">
+                  {compliance.reasons.map((r, i) => (
+                    <li key={i}>{r}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {compliance.hasException && (
+              <div className="p-3 rounded-xl bg-purple-50 border border-purple-200 text-xs text-purple-900 space-y-1">
+                <span className="font-black block text-[11px] text-purple-950 flex items-center gap-1.5">
+                  <ShieldAlert className="w-3.5 h-3.5 text-purple-600" /> Catatan Dispensasi / Pengecualian Resmi:
+                </span>
+                <ul className="list-disc list-inside space-y-0.5 text-[11px]">
+                  {compliance.exceptionReasons.map((r, i) => (
+                    <li key={i}>{r}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </Card>
         </div>
       )}
 
@@ -360,56 +499,104 @@ export const StudentDetailView: React.FC<StudentDetailViewProps> = ({ student, o
 
       {/* Tab 3: Duta Sekolah */}
       {activeTab === 'ambassador' && (
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-              <Award className="w-4 h-4 text-purple-600" />
-              Keanggotaan Duta SEKAR MELATI (Kepemimpinan Murid)
-            </h3>
+        <div className="space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                <Award className="w-4 h-4 text-purple-600" />
+                Keanggotaan Duta SEKAR MELATI (Kepemimpinan Murid)
+              </h3>
+              <p className="text-xs text-slate-500">
+                Aturan: Setiap murid hanya diperbolehkan memiliki maksimal 1 keanggotaan Duta aktif dalam satu periode.
+              </p>
+            </div>
           </div>
 
-          {myAmbassadors.length === 0 ? (
-            <Card className="text-center py-10 text-slate-500 text-xs">
-              Murid saat ini belum ditugaskan dalam korps Duta Sekolah.
-            </Card>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {myAmbassadors.map((amb) => (
-                <Card key={amb.id} className="border-l-4 border-l-purple-600 space-y-3">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <Badge variant="purple">{amb.ambassadorTypeName}</Badge>
-                      <h4 className="text-sm font-extrabold text-slate-900 mt-1">{amb.roleTitle || 'Anggota Kader'}</h4>
-                      <p className="text-xs text-slate-500 mt-0.5">Guru Pembina: {amb.coachName || 'Bapak/Ibu Pembina'}</p>
-                    </div>
-                    <Badge variant="emerald" dot>
-                      {amb.status.toUpperCase()}
-                    </Badge>
-                  </div>
+          {/* Bagian 1: Duta Aktif Saat Ini */}
+          <div className="space-y-3">
+            <h4 className="text-xs font-black text-slate-700 flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" /> Keanggotaan Duta Aktif Periode Ini ({activeAmbassadors.length}/1)
+            </h4>
 
-                  <div className="text-xs text-slate-600 space-y-1 pt-2 border-t border-slate-100">
-                    <p>Periode: <strong>{amb.assignedYear}</strong> (Mulai {amb.startDate})</p>
-                    {amb.reflectionNotes && (
-                      <div className="mt-2 p-2.5 rounded-xl bg-purple-50/70 border border-purple-100 text-purple-950 italic">
-                        Refleksi Diri: "{amb.reflectionNotes}"
+            {activeAmbassadors.length === 0 ? (
+              <Card className="text-center py-6 text-slate-500 text-xs bg-slate-50/60 border border-slate-200">
+                Murid saat ini belum memiliki penugasan Duta aktif untuk periode {schoolProfile.currentAcademicYear}.
+              </Card>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {activeAmbassadors.map((amb) => (
+                  <Card key={amb.id} className="border-l-4 border-l-emerald-600 space-y-3 bg-gradient-to-br from-white to-purple-50/20">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <Badge variant="purple">{amb.ambassadorTypeName}</Badge>
+                        <h4 className="text-sm font-extrabold text-slate-900 mt-1">{amb.roleTitle || 'Anggota Kader'}</h4>
+                        <p className="text-xs text-slate-500 mt-0.5">Guru Pembina: {amb.coachName || 'Bapak/Ibu Pembina'}</p>
                       </div>
+                      <Badge variant="emerald" dot>
+                        AKTIF MENJABAT
+                      </Badge>
+                    </div>
+
+                    <div className="text-xs text-slate-600 space-y-1 pt-2 border-t border-slate-100">
+                      <p>Periode: <strong>{amb.assignedYear}</strong> (Mulai {amb.startDate})</p>
+                      {amb.reflectionNotes && (
+                        <div className="mt-2 p-2.5 rounded-xl bg-purple-50/70 border border-purple-100 text-purple-950 italic">
+                          Refleksi Diri: "{amb.reflectionNotes}"
+                        </div>
+                      )}
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Bagian 2: Riwayat Keanggotaan Duta Sebelumnya */}
+          <div className="space-y-3 pt-3 border-t border-slate-200">
+            <h4 className="text-xs font-black text-slate-700 flex items-center gap-2">
+              <History className="w-4 h-4 text-slate-500" /> Riwayat Penugasan Duta Terdahulu ({pastAmbassadors.length} Periode)
+            </h4>
+
+            {pastAmbassadors.length === 0 ? (
+              <p className="text-xs text-slate-400 italic">Belum ada riwayat penugasan Duta pada periode sebelumnya.</p>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {pastAmbassadors.map((amb) => (
+                  <Card key={amb.id} className="border-l-4 border-l-slate-400 space-y-2 bg-slate-50/70 opacity-90">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <Badge variant="slate">{amb.ambassadorTypeName}</Badge>
+                        <h5 className="text-xs font-bold text-slate-800 mt-1">{amb.roleTitle || 'Anggota Kader'}</h5>
+                        <p className="text-[11px] text-slate-500">Periode: {amb.assignedYear}</p>
+                      </div>
+                      <Badge variant="slate">
+                        {amb.status.toUpperCase()}
+                      </Badge>
+                    </div>
+                    {amb.endDate && (
+                      <p className="text-[11px] text-slate-500">Masa Tugas: {amb.startDate} s/d {amb.endDate}</p>
                     )}
-                  </div>
-                </Card>
-              ))}
-            </div>
-          )}
+                  </Card>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       )}
 
       {/* Tab 4: Ekstrakurikuler */}
       {activeTab === 'ekskul' && (
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-              <Layers className="w-4 h-4 text-blue-600" />
-              Keikutsertaan Ekstrakurikuler
-            </h3>
+        <div className="space-y-5">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                <Layers className="w-4 h-4 text-blue-600" />
+                Keikutsertaan Ekstrakurikuler ({myEkskuls.length} Total)
+              </h3>
+              <p className="text-xs text-slate-500">
+                Wajib Kelas {compliance.gradeLevel}: <strong className="text-slate-800">{compliance.compulsoryRequiredNames.join(', ')}</strong> • Kuota Pilihan: <strong className="text-slate-800">{compliance.electiveCount}/{compliance.maxElectiveAllowed}</strong>
+              </p>
+            </div>
 
             <button
               onClick={() => setIsRegisterEkskulOpen(true)}
@@ -417,6 +604,27 @@ export const StudentDetailView: React.FC<StudentDetailViewProps> = ({ student, o
             >
               <Plus className="w-4 h-4" /> Daftarkan ke Ekstrakurikuler
             </button>
+          </div>
+
+          {/* Status Alert Banner */}
+          <div className={`p-3.5 rounded-2xl border text-xs flex items-start gap-2.5 ${
+            compliance.status === 'Memenuhi Ketentuan'
+              ? 'bg-emerald-50 border-emerald-200 text-emerald-900'
+              : compliance.status === 'Pengecualian'
+              ? 'bg-purple-50 border-purple-200 text-purple-900'
+              : compliance.status === 'Melebihi Batas'
+              ? 'bg-rose-50 border-rose-200 text-rose-900'
+              : 'bg-amber-50 border-amber-200 text-amber-900'
+          }`}>
+            <ShieldCheck className="w-4 h-4 flex-shrink-0 mt-0.5" />
+            <div className="space-y-0.5">
+              <span className="font-black text-xs block">
+                Status Keikutsertaan: {compliance.status}
+              </span>
+              <p className="text-[11px] leading-relaxed">
+                {compliance.statusDescription}
+              </p>
+            </div>
           </div>
 
           {myEkskuls.length === 0 ? (
@@ -431,56 +639,88 @@ export const StudentDetailView: React.FC<StudentDetailViewProps> = ({ student, o
             </Card>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {myEkskuls.map((ek) => (
-                <Card key={ek.id} className="border-l-4 border-l-blue-600 space-y-3">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <h4 className="text-sm font-extrabold text-slate-900">{ek.extracurricularName}</h4>
-                      <p className="text-xs text-slate-500">Tanggal Daftar: {ek.joinedAt}</p>
+              {myEkskuls.map((ek) => {
+                const isWajib = ek.isCompulsory || compliance.compulsoryJoined.some((c) => c.id === ek.id);
+                return (
+                  <Card
+                    key={ek.id}
+                    className={`border-l-4 space-y-3 ${
+                      isWajib ? 'border-l-blue-600 bg-blue-50/10' : 'border-l-emerald-600'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <div className="flex items-center gap-1.5 mb-1">
+                          {isWajib ? (
+                            <span className="px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 text-[10px] font-black border border-blue-200">
+                              ★ EKSTRAKURIKULER WAJIB
+                            </span>
+                          ) : (
+                            <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold border border-emerald-200">
+                              🎯 EKSTRAKURIKULER PILIHAN
+                            </span>
+                          )}
+                          {ek.isException && (
+                            <span className="px-2 py-0.5 rounded-full bg-purple-100 text-purple-800 text-[10px] font-bold border border-purple-200">
+                              DISPENSASI
+                            </span>
+                          )}
+                        </div>
+                        <h4 className="text-sm font-extrabold text-slate-900">{ek.extracurricularName}</h4>
+                        <p className="text-xs text-slate-500">Terdaftar sejak: {ek.joinedAt} • TP: {ek.academicYear || schoolProfile.currentAcademicYear}</p>
+                      </div>
+                      <Badge variant={ek.status === 'aktif' ? 'emerald' : 'slate'} dot>
+                        {ek.status.toUpperCase()}
+                      </Badge>
                     </div>
-                    <Badge variant="blue">{ek.status.toUpperCase()}</Badge>
-                  </div>
 
-                  <div className="flex items-center justify-between text-xs pt-2 border-t border-slate-100">
-                    <span className="text-slate-500">Kehadiran Latihan:</span>
-                    <span className="font-extrabold text-emerald-700">{ek.attendancePercentage || 100}%</span>
-                  </div>
+                    {ek.isException && ek.exceptionReason && (
+                      <div className="p-2 rounded-xl bg-purple-50 text-[11px] text-purple-900 border border-purple-200">
+                        <strong>Catatan Dispensasi:</strong> "{ek.exceptionReason}"
+                      </div>
+                    )}
 
-                  {/* Report Card Grade & Description Section */}
-                  <div className="p-3 rounded-2xl bg-amber-50/80 border border-amber-200/90 space-y-1.5">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[11px] font-bold text-amber-950 flex items-center gap-1">
-                        <Award className="w-3.5 h-3.5 text-amber-600" /> Nilai Rapor (Kurikulum Merdeka):
-                      </span>
-                      {ek.grade ? (
-                        <span className="px-2.5 py-0.5 rounded-lg bg-amber-300 text-amber-950 font-black text-xs shadow-2xs">
-                          {ek.grade}
+                    <div className="flex items-center justify-between text-xs pt-2 border-t border-slate-100">
+                      <span className="text-slate-500">Kehadiran Latihan:</span>
+                      <span className="font-extrabold text-emerald-700">{ek.attendancePercentage || 100}%</span>
+                    </div>
+
+                    {/* Report Card Grade & Description Section */}
+                    <div className="p-3 rounded-2xl bg-amber-50/80 border border-amber-200/90 space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[11px] font-bold text-amber-950 flex items-center gap-1">
+                          <Award className="w-3.5 h-3.5 text-amber-600" /> Nilai Rapor (Kurikulum Merdeka):
                         </span>
+                        {ek.grade ? (
+                          <span className="px-2.5 py-0.5 rounded-lg bg-amber-300 text-amber-950 font-black text-xs shadow-2xs">
+                            {ek.grade}
+                          </span>
+                        ) : (
+                          <span className="text-[10.5px] font-semibold text-slate-400 italic bg-white px-2 py-0.5 rounded">
+                            Belum Dinilai Pembina
+                          </span>
+                        )}
+                      </div>
+
+                      {ek.reportDescription ? (
+                        <div className="text-xs text-slate-800 leading-relaxed font-medium bg-white p-2.5 rounded-xl border border-amber-100">
+                          "{ek.reportDescription}"
+                        </div>
                       ) : (
-                        <span className="text-[10.5px] font-semibold text-slate-400 italic bg-white px-2 py-0.5 rounded">
-                          Belum Dinilai Pembina
-                        </span>
+                        <p className="text-[11px] text-slate-500 italic">
+                          Menunggu masukan penilaian dan deskripsi capaian dari Guru Pembina.
+                        </p>
                       )}
                     </div>
 
-                    {ek.reportDescription ? (
-                      <div className="text-xs text-slate-800 leading-relaxed font-medium bg-white p-2.5 rounded-xl border border-amber-100">
-                        "{ek.reportDescription}"
-                      </div>
-                    ) : (
-                      <p className="text-[11px] text-slate-500 italic">
-                        Menunggu masukan penilaian dan deskripsi capaian dari Guru Pembina.
+                    {ek.coachNotes && (
+                      <p className="text-xs text-slate-600 bg-slate-50 p-2.5 rounded-xl italic">
+                        Catatan Pembina: "{ek.coachNotes}"
                       </p>
                     )}
-                  </div>
-
-                  {ek.coachNotes && (
-                    <p className="text-xs text-slate-600 bg-slate-50 p-2.5 rounded-xl italic">
-                      Catatan Tambahan Pembina: "{ek.coachNotes}"
-                    </p>
-                  )}
-                </Card>
-              ))}
+                  </Card>
+                );
+              })}
             </div>
           )}
         </div>

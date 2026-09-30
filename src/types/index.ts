@@ -166,6 +166,8 @@ export interface AmbassadorMember {
   roleTitle?: string; // e.g. "Koordinator Kelas 4", "Anggota Tim Kampanye"
   reflectionNotes?: string;
   contributionsCount?: number;
+  deactivatedReason?: string;
+  exceptionReason?: string;
   createdAt: string;
 }
 
@@ -221,7 +223,7 @@ export interface ExtracurricularMember {
   studentNis: string;
   classId: string;
   joinedAt: string;
-  status: 'menunggu' | 'aktif' | 'nonaktif';
+  status: 'menunggu' | 'aktif' | 'nonaktif' | 'selesai' | 'alumni';
   attendancePercentage?: number;
   coachNotes?: string;
   // Report Card Assessment Fields (Kurikulum Merdeka)
@@ -231,6 +233,10 @@ export interface ExtracurricularMember {
   semester?: 'Ganjil' | 'Genap';
   evaluatedBy?: string;
   evaluatedAt?: string;
+  // Rule Compliance & Exception Fields
+  isCompulsory?: boolean;
+  isException?: boolean;
+  exceptionReason?: string;
   createdAt: string;
 }
 
@@ -388,4 +394,5 @@ export interface SchoolProfile {
   currentAcademicYear: string;
   currentSemester: 'Ganjil' | 'Genap';
   tagline: string;
+  maxElectiveExtracurricular?: number; // Aturan batas maksimal ekstrakurikuler pilihan (default 2)
 }

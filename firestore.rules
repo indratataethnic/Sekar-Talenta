@@ -85,7 +85,11 @@ service cloud.firestore {
 
     match /ambassadorMembers/{memberId} {
       allow read: if true;
-      allow write: if true;
+      allow create, update: if request.resource.data.studentId is string &&
+        request.resource.data.studentId.size() > 0 &&
+        request.resource.data.ambassadorTypeId is string &&
+        request.resource.data.status in ['aktif', 'selesai', 'alumni'];
+      allow delete: if isSuperAdmin();
     }
 
     match /ambassadorPrograms/{programId} {
@@ -95,7 +99,12 @@ service cloud.firestore {
 
     match /extracurricularMembers/{memberId} {
       allow read: if true;
-      allow write: if true;
+      allow create, update: if request.resource.data.studentId is string &&
+        request.resource.data.studentId.size() > 0 &&
+        request.resource.data.extracurricularId is string &&
+        request.resource.data.status in ['menunggu', 'aktif', 'nonaktif', 'selesai', 'alumni'] &&
+        (!('isException' in request.resource.data) || !request.resource.data.isException || (request.resource.data.exceptionReason is string && request.resource.data.exceptionReason.size() > 0));
+      allow delete: if isSuperAdmin();
     }
 
     match /activities/{activityId} {

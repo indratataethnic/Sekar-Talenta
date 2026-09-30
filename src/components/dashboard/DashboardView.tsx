@@ -14,7 +14,10 @@ import {
   Compass,
   Star,
   CheckCircle2,
-  GraduationCap
+  GraduationCap,
+  AlertTriangle,
+  AlertCircle,
+  ShieldAlert
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
@@ -23,6 +26,7 @@ import { StatCard } from './StatCard';
 import { DashboardCharts } from './DashboardCharts';
 import { Card } from '../common/Card';
 import { Badge } from '../common/Badge';
+import { validateStudentExtracurriculars } from '../../utils/ruleValidation';
 
 interface DashboardViewProps {
   onNavigate: (tab: string) => void;
@@ -40,7 +44,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
     activities,
     portfolios,
     achievements,
-    announcements
+    announcements,
+    schoolProfile
   } = useData();
 
   // ONLY Guru Kelas is scoped to their specific assigned class
@@ -67,6 +72,28 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
   const totalPortfoliosAndAchievements = isClassScoped
     ? portfolios.filter((p) => myClassStudentIds.has(p.studentId)).length + achievements.filter((a) => myClassStudentIds.has(a.studentId)).length
     : portfolios.length + achievements.length;
+
+  // Extracurricular & Ambassador Rule Compliance
+  const maxElective = schoolProfile.maxElectiveExtracurricular || 2;
+  const studentValidations = useMemo(() => {
+    return myClassStudents.map((s) =>
+      validateStudentExtracurriculars(
+        s,
+        extracurricularMembers,
+        maxElective,
+        schoolProfile.currentAcademicYear
+      )
+    );
+  }, [myClassStudents, extracurricularMembers, maxElective, schoolProfile.currentAcademicYear]);
+
+  const countMemenuhi = studentValidations.filter((v) => v.status === 'Memenuhi Ketentuan').length;
+  const countBelumMemenuhi = studentValidations.filter((v) => v.status === 'Belum Memenuhi').length;
+  const countMelebihiBatas = studentValidations.filter((v) => v.status === 'Melebihi Batas').length;
+  const countPengecualian = studentValidations.filter((v) => v.status === 'Pengecualian').length;
+
+  const countMissingElective = studentValidations.filter((v) => v.isElectiveUnderMin).length;
+  const countMissingCompulsory = studentValidations.filter((v) => !v.isCompulsoryComplete).length;
+  const percentMemenuhi = totalStudents > 0 ? Math.round((countMemenuhi / totalStudents) * 100) : 0;
 
   const upcomingActivities = activities
     .filter((a) => a.status === 'rencana' || a.status === 'berlangsung')
@@ -189,6 +216,107 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
           onClick={() => onNavigate('portfolios')}
         />
       </div>
+
+      {/* Monitoring Kepatuhan Aturan Ekstrakurikuler & Duta */}
+      <Card className="p-5 bg-gradient-to-br from-white via-emerald-50/20 to-teal-50/30 border-2 border-emerald-200/80 space-y-4 shadow-sm">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-emerald-100 pb-3">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 rounded-2xl bg-emerald-700 text-white shadow-xs">
+              <ShieldCheck className="w-6 h-6" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="text-base font-black text-slate-900">
+                  Monitoring Aturan Ekstrakurikuler & Duta Sekolah
+                </h3>
+                <span className="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-extrabold border border-emerald-300">
+                  {percentMemenuhi}% Patuh
+                </span>
+              </div>
+              <p className="text-xs text-slate-500">
+                Pramuka (Wajib 1-5) • TIK (Wajib 4-6) • Min. 1 Pilihan • Maks. {maxElective} Pilihan • Maks. 1 Duta Aktif/Periode
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => onNavigate('reports')}
+              className="px-3.5 py-1.5 rounded-xl bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-bold shadow-2xs flex items-center gap-1.5 transition-all"
+            >
+              <TrendingUp className="w-3.5 h-3.5 text-emerald-700" /> Laporan Rinci
+            </button>
+            <button
+              onClick={() => onNavigate('students')}
+              className="px-3.5 py-1.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold shadow-xs flex items-center gap-1.5 transition-all active:scale-95"
+            >
+              <Users className="w-3.5 h-3.5" /> Lihat di Data Murid
+            </button>
+          </div>
+        </div>
+
+        {/* 4 Summary Counters */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div
+            onClick={() => onNavigate('reports')}
+            className="p-3.5 rounded-2xl bg-white border border-emerald-200 hover:border-emerald-400 hover:shadow-sm cursor-pointer transition-all space-y-1"
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold text-slate-500">Memenuhi Ketentuan</span>
+              <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+            </div>
+            <p className="text-2xl font-black text-emerald-800">{countMemenuhi}</p>
+            <span className="text-[10px] text-emerald-600 font-semibold block">
+              ✓ Ekskul wajib & pilihan lengkap
+            </span>
+          </div>
+
+          <div
+            onClick={() => onNavigate('reports')}
+            className="p-3.5 rounded-2xl bg-white border border-amber-200 hover:border-amber-400 hover:shadow-sm cursor-pointer transition-all space-y-1"
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold text-slate-500">Belum Memenuhi</span>
+              <AlertTriangle className="w-4 h-4 text-amber-600" />
+            </div>
+            <p className="text-2xl font-black text-amber-900">{countBelumMemenuhi}</p>
+            <span className="text-[10px] text-amber-700 font-semibold block truncate">
+              {countMissingCompulsory > 0 ? `${countMissingCompulsory} kurang wajib` : ''}
+              {countMissingCompulsory > 0 && countMissingElective > 0 ? ' • ' : ''}
+              {countMissingElective > 0 ? `${countMissingElective} belum pilih ekskul` : ''}
+              {countMissingCompulsory === 0 && countMissingElective === 0 ? 'Perlu dilengkapi' : ''}
+            </span>
+          </div>
+
+          <div
+            onClick={() => onNavigate('reports')}
+            className="p-3.5 rounded-2xl bg-white border border-rose-200 hover:border-rose-400 hover:shadow-sm cursor-pointer transition-all space-y-1"
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold text-slate-500">Melebihi Batas</span>
+              <AlertCircle className="w-4 h-4 text-rose-600" />
+            </div>
+            <p className="text-2xl font-black text-rose-900">{countMelebihiBatas}</p>
+            <span className="text-[10px] text-rose-600 font-semibold block">
+              Lebih dari {maxElective} ekskul pilihan
+            </span>
+          </div>
+
+          <div
+            onClick={() => onNavigate('reports')}
+            className="p-3.5 rounded-2xl bg-white border border-purple-200 hover:border-purple-400 hover:shadow-sm cursor-pointer transition-all space-y-1"
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold text-slate-500">Pengecualian / Dispensasi</span>
+              <ShieldAlert className="w-4 h-4 text-purple-600" />
+            </div>
+            <p className="text-2xl font-black text-purple-900">{countPengecualian}</p>
+            <span className="text-[10px] text-purple-600 font-semibold block">
+              Izin resmi alasan tersimpan
+            </span>
+          </div>
+        </div>
+      </Card>
 
       {/* Charts Section: School-Wide Talent & Activity Overview */}
       <DashboardCharts />

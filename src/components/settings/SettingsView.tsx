@@ -558,6 +558,60 @@ export const SettingsView: React.FC = () => {
                   className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 focus:outline-emerald-600 italic"
                 />
               </div>
+
+              {/* Aturan & Kebijakan Ekstrakurikuler & Duta */}
+              <div className="sm:col-span-2 mt-4 p-5 bg-gradient-to-br from-emerald-50 via-teal-50/50 to-slate-50 rounded-2xl border-2 border-emerald-200 space-y-4">
+                <div className="flex items-center justify-between border-b border-emerald-200/80 pb-3">
+                  <div>
+                    <h4 className="text-xs font-black text-emerald-950 flex items-center gap-2">
+                      <ShieldCheck className="w-4 h-4 text-emerald-700" /> Aturan Keikutsertaan Ekstrakurikuler & Duta Sekolah
+                    </h4>
+                    <p className="text-[11px] text-emerald-800">
+                      Konfigurasi pembatasan keikutsertaan yang divalidasi sistem dan diamankan di database
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="p-3.5 bg-white rounded-xl border border-emerald-300 shadow-2xs space-y-1.5">
+                    <label className="block text-xs font-black text-slate-800">
+                      Batas Maksimal Ekstrakurikuler Pilihan (per Murid) <span className="text-rose-500">*</span>
+                    </label>
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="number"
+                        min={1}
+                        max={10}
+                        required
+                        value={profileForm.maxElectiveExtracurricular ?? 2}
+                        onChange={(e) =>
+                          setProfileForm({
+                            ...profileForm,
+                            maxElectiveExtracurricular: Math.max(1, parseInt(e.target.value, 10) || 2)
+                          })
+                        }
+                        className="w-28 px-3 py-2 text-sm font-black text-emerald-900 rounded-xl border-2 border-emerald-400 focus:outline-emerald-600 bg-emerald-50/30 text-center"
+                      />
+                      <span className="text-xs text-slate-600 font-medium">
+                        kegiatan pilihan / murid (bawaan: <strong>2</strong>)
+                      </span>
+                    </div>
+                    <p className="text-[10px] text-slate-500 leading-relaxed pt-1">
+                      ⚠️ Ekstrakurikuler wajib (Pramuka & TIK) <strong>tidak dihitung</strong> sebagai bagian dari kuota batas ini.
+                    </p>
+                  </div>
+
+                  <div className="p-3.5 bg-white rounded-xl border border-slate-200 shadow-2xs text-[11px] text-slate-600 space-y-2">
+                    <span className="font-bold text-slate-800 block text-xs">Ketentuan Baku Sistem Sekolah:</span>
+                    <ul className="space-y-1 list-disc list-inside text-[11px]">
+                      <li><strong className="text-slate-800">Pramuka Wajib:</strong> Murid Kelas 1 s/d Kelas 5</li>
+                      <li><strong className="text-slate-800">TIK Wajib:</strong> Murid Kelas 4 s/d Kelas 6</li>
+                      <li><strong className="text-slate-800">Minimal Pilihan:</strong> Minimal 1 ekskul pilihan</li>
+                      <li><strong className="text-slate-800">Duta Sekolah:</strong> Maksimal 1 Duta aktif per murid dalam 1 periode</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
             </div>
 
             <div className="flex justify-end pt-4 border-t border-slate-100">
@@ -565,7 +619,7 @@ export const SettingsView: React.FC = () => {
                 type="submit"
                 className="px-5 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs shadow-md transition-all active:scale-95"
               >
-                Simpan Profil Sekolah
+                Simpan Profil & Aturan Sekolah
               </button>
             </div>
           </form>

@@ -41,6 +41,7 @@ import {
   initialAnnouncements,
   initialAuditLogs
 } from '../data/initialData';
+import { extractGradeLevel, isPramukaEkskul, isTikEkskul } from '../utils/ruleValidation';
 import { useAuth } from './AuthContext';
 import { db, isFirebaseConfigured, handleFirestoreError, OperationType, testConnection } from '../config/firebase';
 import {
@@ -103,6 +104,7 @@ interface DataContextType {
   updateExtracurricular: (id: string, updates: Partial<Extracurricular>) => Promise<void>;
   deleteExtracurricular: (id: string) => Promise<void>;
   registerExtracurricularMember: (data: Omit<ExtracurricularMember, 'id' | 'createdAt'>) => Promise<void>;
+  registerBatchExtracurricularMembers: (membersData: Omit<ExtracurricularMember, 'id' | 'createdAt'>[]) => Promise<{ registeredCount: number; skippedCount: number; errors: string[] }>;
   updateExtracurricularMember: (id: string, updates: Partial<ExtracurricularMember>) => Promise<void>;
   removeExtracurricularMember: (id: string) => Promise<void>;
   addActivity: (data: Omit<Activity, 'id' | 'createdAt' | 'updatedAt'>) => Promise<Activity>;
@@ -751,6 +753,16 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const addAmbassadorMember = async (data: Omit<AmbassadorMember, 'id' | 'createdAt'>) => {
+    // ATURAN DUTA SEKOLAH: 1 keanggotaan Duta aktif per murid dalam 1 periode
+    const existingActive = ambassadorMembers.find(
+      (m) => m.studentId === data.studentId && m.status === 'aktif' && (m.assignedYear === data.assignedYear || !data.assignedYear)
+    );
+    if (existingActive) {
+      throw new Error(
+        `Validasi Aturan Duta: Murid "${data.studentName}" telah memiliki keanggotaan aktif sebagai "${existingActive.ambassadorTypeName}" (${existingActive.roleTitle || 'Anggota'}) pada periode ${existingActive.assignedYear}. Setiap murid hanya boleh memiliki 1 keanggotaan Duta aktif dalam satu periode.`
+      );
+    }
+
     const newMember: AmbassadorMember = {
       ...data,
       id: `amb_mem_${Date.now()}`,
@@ -887,13 +899,53 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const registerExtracurricularMember = async (data: Omit<ExtracurricularMember, 'id' | 'createdAt'>) => {
+    // Check if already active
+    const already = extracurricularMembers.find(
+      (m) => m.studentId === data.studentId && m.extracurricularId === data.extracurricularId && m.status === 'aktif'
+    );
+    if (already) {
+      throw new Error(`Murid "${data.studentName}" sudah terdaftar aktif di ekstrakurikuler ${data.extracurricularName}.`);
+    }
+
+    const gradeLevel = extractGradeLevel(data.classId);
+    const isPramuka = isPramukaEkskul(data.extracurricularId) || isPramukaEkskul(data.extracurricularName);
+    const isTik = isTikEkskul(data.extracurricularId) || isTikEkskul(data.extracurricularName);
+    const isCompulsory =
+      (isPramuka && gradeLevel >= 1 && gradeLevel <= 5) ||
+      (isTik && gradeLevel >= 4 && gradeLevel <= 6);
+
+    const maxElective = schoolProfile.maxElectiveExtracurricular || 2;
+
+    if (!isCompulsory && !data.isException) {
+      const activeElectives = extracurricularMembers.filter((m) => {
+        if (m.studentId !== data.studentId || m.status !== 'aktif') return false;
+        const mP = isPramukaEkskul(m.extracurricularId) || isPramukaEkskul(m.extracurricularName);
+        const mT = isTikEkskul(m.extracurricularId) || isTikEkskul(m.extracurricularName);
+        const mComp = (mP && gradeLevel >= 1 && gradeLevel <= 5) || (mT && gradeLevel >= 4 && gradeLevel <= 6);
+        return !mComp;
+      });
+
+      if (activeElectives.length >= maxElective) {
+        throw new Error(
+          `Validasi Aturan Ekstrakurikuler: Pendaftaran melebihi batas maksimal ${maxElective} ekstrakurikuler pilihan. Berikan dispensasi/pengecualian dengan alasan tertulis jika disetujui Admin.`
+        );
+      }
+    }
+
     const newMember: ExtracurricularMember = {
       ...data,
+      isCompulsory,
+      academicYear: data.academicYear || schoolProfile.currentAcademicYear,
       id: `ext_mem_${Date.now()}`,
       createdAt: new Date().toISOString()
     };
     setExtracurricularMembers((prev) => [newMember, ...prev]);
-    logAction('ASSIGN', 'ExtracurricularMember', newMember.id, `Mendaftarkan ${data.studentName} ke ${data.extracurricularName}`);
+    logAction(
+      'ASSIGN',
+      'ExtracurricularMember',
+      newMember.id,
+      `Mendaftarkan ${data.studentName} ke ${data.extracurricularName}${data.isException ? ' (Dispensasi: ' + data.exceptionReason + ')' : ''}`
+    );
 
     if (isFirebaseConfigured && db) {
       try {
@@ -902,6 +954,71 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         handleFirestoreError(err, OperationType.CREATE, `extracurricularMembers/${newMember.id}`);
       }
     }
+  };
+
+  const registerBatchExtracurricularMembers = async (
+    membersData: Omit<ExtracurricularMember, 'id' | 'createdAt'>[]
+  ): Promise<{ registeredCount: number; skippedCount: number; errors: string[] }> => {
+    let registeredCount = 0;
+    let skippedCount = 0;
+    const errors: string[] = [];
+    const newMembers: ExtracurricularMember[] = [];
+
+    const currentAcademicYear = schoolProfile.currentAcademicYear;
+
+    for (let i = 0; i < membersData.length; i++) {
+      const data = membersData[i];
+      // Check if already active
+      const already = extracurricularMembers.some(
+        (m) => m.studentId === data.studentId && m.extracurricularId === data.extracurricularId && m.status === 'aktif'
+      );
+      if (already) {
+        skippedCount++;
+        continue;
+      }
+
+      const gradeLevel = extractGradeLevel(data.classId);
+      const isPramuka = isPramukaEkskul(data.extracurricularId) || isPramukaEkskul(data.extracurricularName);
+      const isTik = isTikEkskul(data.extracurricularId) || isTikEkskul(data.extracurricularName);
+      const isCompulsory =
+        (isPramuka && gradeLevel >= 1 && gradeLevel <= 5) ||
+        (isTik && gradeLevel >= 4 && gradeLevel <= 6);
+
+      const uniqueId = `ext_mem_${Date.now()}_${i}_${Math.random().toString(36).substring(2, 6)}`;
+      const memberObj: ExtracurricularMember = {
+        ...data,
+        id: uniqueId,
+        isCompulsory,
+        academicYear: data.academicYear || currentAcademicYear,
+        createdAt: new Date().toISOString()
+      };
+
+      newMembers.push(memberObj);
+      registeredCount++;
+    }
+
+    if (newMembers.length > 0) {
+      setExtracurricularMembers((prev) => [...newMembers, ...prev]);
+      logAction(
+        'ASSIGN',
+        'ExtracurricularMember',
+        newMembers[0].id,
+        `Mendaftarkan masal ${registeredCount} murid ke ${newMembers[0].extracurricularName}`
+      );
+
+      if (isFirebaseConfigured && db) {
+        try {
+          const promises = newMembers.map((m) =>
+            setDoc(doc(db, 'extracurricularMembers', m.id), sanitizeForFirestore(m))
+          );
+          await Promise.all(promises);
+        } catch (err) {
+          handleFirestoreError(err, OperationType.CREATE, `extracurricularMembers/batch`);
+        }
+      }
+    }
+
+    return { registeredCount, skippedCount, errors };
   };
 
   const updateExtracurricularMember = async (id: string, updates: Partial<ExtracurricularMember>) => {
@@ -1400,6 +1517,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         updateExtracurricular,
         deleteExtracurricular,
         registerExtracurricularMember,
+        registerBatchExtracurricularMembers,
         updateExtracurricularMember,
         removeExtracurricularMember,
         addActivity,

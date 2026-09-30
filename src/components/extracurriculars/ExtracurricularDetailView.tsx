@@ -51,6 +51,7 @@ export const ExtracurricularDetailView: React.FC<ExtracurricularDetailViewProps>
 
   const [activeTab, setActiveTab] = useState<'members' | 'goals' | 'activities' | 'achievements'>('members');
   const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
+  const [registerInitialMode, setRegisterInitialMode] = useState<'individual' | 'class'>('individual');
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [gradingMember, setGradingMember] = useState<ExtracurricularMember | null>(null);
   const [deletingMemberId, setDeletingMemberId] = useState<string | null>(null);
@@ -299,12 +300,28 @@ export const ExtracurricularDetailView: React.FC<ExtracurricularDetailViewProps>
               <p className="text-xs text-slate-500">Rekap keaktifan & kehadiran latihan</p>
             </div>
             {canManageExtracurriculars && (
-              <button
-                onClick={() => setIsRegisterModalOpen(true)}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold shadow-xs active:scale-95"
-              >
-                <Plus className="w-3.5 h-3.5" /> Daftarkan Murid
-              </button>
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setRegisterInitialMode('class');
+                    setIsRegisterModalOpen(true);
+                  }}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-700 hover:bg-blue-800 text-white text-xs font-bold shadow-xs active:scale-95 transition-all"
+                >
+                  <School className="w-3.5 h-3.5" /> Daftarkan Satu Kelas
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setRegisterInitialMode('individual');
+                    setIsRegisterModalOpen(true);
+                  }}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold shadow-xs active:scale-95 transition-all"
+                >
+                  <Plus className="w-3.5 h-3.5" /> Daftarkan Murid
+                </button>
+              </div>
             )}
           </div>
 
@@ -462,6 +479,7 @@ export const ExtracurricularDetailView: React.FC<ExtracurricularDetailViewProps>
         isOpen={isRegisterModalOpen}
         onClose={() => setIsRegisterModalOpen(false)}
         extracurricular={extracurricular}
+        initialMode={registerInitialMode}
       />
 
       <ExtracurricularGradeModal
