@@ -121,7 +121,8 @@ interface DataContextType {
   deleteAnnouncement: (id: string) => Promise<void>;
   markNotificationAsRead: (id: string) => void;
   resetToDemoData: () => void;
-  clearAllDemoData: () => void;
+  clearAllDemoData: () => Promise<void>;
+  purgeOnlyDummyData: () => Promise<void>;
   exportAllDataAsJson: () => string;
   importAllDataFromJson: (jsonStr: string) => Promise<boolean>;
   seedInitialDataToFirestore: () => Promise<void>;
@@ -243,24 +244,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Automatic boot check: seed if Firestore database is empty or missing core collections
-  useEffect(() => {
-    if (!isFirebaseConfigured || !db) return;
-    const checkAndSeed = async () => {
-      try {
-        const studentSnap = await getDocs(collection(db, 'students'));
-        const ekskulMemberSnap = await getDocs(collection(db, 'extracurricularMembers'));
-        if (studentSnap.empty || ekskulMemberSnap.empty) {
-          console.info('Firestore records missing. Seeding initial data to Cloud Database...');
-          await seedInitialDataToFirestore();
-        }
-      } catch (err) {
-        console.warn('Initial Firestore check notice:', err);
-      }
-    };
-    checkAndSeed();
-  }, []);
-
   // Firestore Realtime Listeners across all collections
   useEffect(() => {
     if (!isFirebaseConfigured || !db) {
@@ -279,105 +262,105 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const unsubStudents = onSnapshot(collection(db, 'students'), (snap) => {
       const items: Student[] = [];
       snap.forEach((doc) => items.push(doc.data() as Student));
-      if (items.length > 0) setStudents(items);
+      setStudents(items);
     }, (error) => console.warn('Students snapshot notice:', error.message));
 
     // 2. Teachers listener
     const unsubTeachers = onSnapshot(collection(db, 'teachers'), (snap) => {
       const items: Teacher[] = [];
       snap.forEach((doc) => items.push(doc.data() as Teacher));
-      if (items.length > 0) setTeachers(items);
+      setTeachers(items);
     }, (error) => console.warn('Teachers snapshot notice:', error.message));
 
     // 3. Extracurriculars listener
     const unsubEkskulMaster = onSnapshot(collection(db, 'extracurriculars'), (snap) => {
       const items: Extracurricular[] = [];
       snap.forEach((doc) => items.push(doc.data() as Extracurricular));
-      if (items.length > 0) setExtracurriculars(items);
+      setExtracurriculars(items);
     }, (error) => console.warn('Extracurriculars snapshot notice:', error.message));
 
     // 4. Ambassador Types listener
     const unsubAmbassadorTypes = onSnapshot(collection(db, 'ambassadorTypes'), (snap) => {
       const items: AmbassadorType[] = [];
       snap.forEach((doc) => items.push(doc.data() as AmbassadorType));
-      if (items.length > 0) setAmbassadorTypes(items);
+      setAmbassadorTypes(items);
     }, (error) => console.warn('AmbassadorTypes snapshot notice:', error.message));
 
     // 5. Student Interests listener
     const unsubInterests = onSnapshot(collection(db, 'studentInterests'), (snap) => {
       const items: StudentInterest[] = [];
       snap.forEach((doc) => items.push(doc.data() as StudentInterest));
-      if (items.length > 0) setStudentInterests(items);
+      setStudentInterests(items);
     }, (error) => console.warn('StudentInterests snapshot notice:', error.message));
 
     // 6. Teacher Observations listener
     const unsubObservations = onSnapshot(collection(db, 'teacherObservations'), (snap) => {
       const items: TeacherObservation[] = [];
       snap.forEach((doc) => items.push(doc.data() as TeacherObservation));
-      if (items.length > 0) setTeacherObservations(items);
+      setTeacherObservations(items);
     }, (error) => console.warn('TeacherObservations snapshot notice:', error.message));
 
     // 7. Ambassador Members listener
     const unsubAmbassadors = onSnapshot(collection(db, 'ambassadorMembers'), (snap) => {
       const items: AmbassadorMember[] = [];
       snap.forEach((doc) => items.push(doc.data() as AmbassadorMember));
-      if (items.length > 0) setAmbassadorMembers(items);
+      setAmbassadorMembers(items);
     }, (error) => console.warn('AmbassadorMembers snapshot notice:', error.message));
 
     // 8. Ambassador Programs listener
     const unsubAmbassadorPrograms = onSnapshot(collection(db, 'ambassadorPrograms'), (snap) => {
       const items: AmbassadorProgram[] = [];
       snap.forEach((doc) => items.push(doc.data() as AmbassadorProgram));
-      if (items.length > 0) setAmbassadorPrograms(items);
+      setAmbassadorPrograms(items);
     }, (error) => console.warn('AmbassadorPrograms snapshot notice:', error.message));
 
     // 9. Extracurricular Members listener
     const unsubEkskulMembers = onSnapshot(collection(db, 'extracurricularMembers'), (snap) => {
       const items: ExtracurricularMember[] = [];
       snap.forEach((doc) => items.push(doc.data() as ExtracurricularMember));
-      if (items.length > 0) setExtracurricularMembers(items);
+      setExtracurricularMembers(items);
     }, (error) => console.warn('ExtracurricularMembers snapshot notice:', error.message));
 
     // 10. Portfolios listener
     const unsubPortfolios = onSnapshot(collection(db, 'portfolios'), (snap) => {
       const items: Portfolio[] = [];
       snap.forEach((doc) => items.push(doc.data() as Portfolio));
-      if (items.length > 0) setPortfolios(items);
+      setPortfolios(items);
     }, (error) => console.warn('Portfolios snapshot notice:', error.message));
 
     // 11. Achievements listener
     const unsubAchievements = onSnapshot(collection(db, 'achievements'), (snap) => {
       const items: Achievement[] = [];
       snap.forEach((doc) => items.push(doc.data() as Achievement));
-      if (items.length > 0) setAchievements(items);
+      setAchievements(items);
     }, (error) => console.warn('Achievements snapshot notice:', error.message));
 
     // 12. Activities listener
     const unsubActivities = onSnapshot(collection(db, 'activities'), (snap) => {
       const items: Activity[] = [];
       snap.forEach((doc) => items.push(doc.data() as Activity));
-      if (items.length > 0) setActivities(items);
+      setActivities(items);
     }, (error) => console.warn('Activities snapshot notice:', error.message));
 
     // 13. Attendance Sessions listener
     const unsubAttendance = onSnapshot(collection(db, 'attendanceSessions'), (snap) => {
       const items: AttendanceSession[] = [];
       snap.forEach((doc) => items.push(doc.data() as AttendanceSession));
-      if (items.length > 0) setAttendanceSessions(items);
+      setAttendanceSessions(items);
     }, (error) => console.warn('AttendanceSessions snapshot notice:', error.message));
 
     // 14. Announcements listener
     const unsubAnnouncements = onSnapshot(collection(db, 'announcements'), (snap) => {
       const items: Announcement[] = [];
       snap.forEach((doc) => items.push(doc.data() as Announcement));
-      if (items.length > 0) setAnnouncements(items);
+      setAnnouncements(items);
     }, (error) => console.warn('Announcements snapshot notice:', error.message));
 
     // 15. Audit Logs listener
     const unsubLogs = onSnapshot(collection(db, 'auditLogs'), (snap) => {
       const items: AuditLog[] = [];
       snap.forEach((doc) => items.push(doc.data() as AuditLog));
-      if (items.length > 0) setAuditLogs(items);
+      setAuditLogs(items);
     }, (error) => console.warn('AuditLogs snapshot notice:', error.message));
 
     return () => {
@@ -1209,7 +1192,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     logAction('SYSTEM', 'Database', 'all', 'Mereset database ke data demonstrasi standar UPT SDN Karanganyar');
   };
 
-  const clearAllDemoData = () => {
+  const clearAllDemoData = async () => {
     setStudents([]);
     setTeachers([]);
     setStudentInterests([]);
@@ -1223,7 +1206,77 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setAchievements([]);
     setAnnouncements([]);
     setIsDemoMode(false);
-    logAction('SYSTEM', 'Database', 'all', 'Mengosongkan data demonstrasi untuk memulai data sekolah riil');
+
+    if (isFirebaseConfigured && db) {
+      try {
+        const collectionsToClear = [
+          'students',
+          'teachers',
+          'studentInterests',
+          'teacherObservations',
+          'ambassadorMembers',
+          'ambassadorPrograms',
+          'extracurricularMembers',
+          'activities',
+          'attendanceSessions',
+          'portfolios',
+          'achievements',
+          'announcements'
+        ];
+        for (const colName of collectionsToClear) {
+          const snap = await getDocs(collection(db, colName));
+          for (const d of snap.docs) {
+            await deleteDoc(doc(db, colName, d.id));
+          }
+        }
+      } catch (err: any) {
+        console.warn('Clear firestore notice:', err.message);
+      }
+    }
+    logAction('SYSTEM', 'Database', 'all', 'Mengosongkan seluruh data dari database lokal dan Firestore');
+  };
+
+  const purgeOnlyDummyData = async () => {
+    const demoStudentIds = new Set(initialStudents.map((s) => s.id));
+    const demoTeacherIds = new Set(initialTeachers.map((t) => t.id));
+    const demoEkskulMemberIds = new Set(initialExtracurricularMembers.map((m) => m.id));
+    const demoAmbassadorMemberIds = new Set(initialAmbassadorMembers.map((m) => m.id));
+    const demoPortIds = new Set(initialPortfolios.map((p) => p.id));
+    const demoAchIds = new Set(initialAchievements.map((a) => a.id));
+    const demoActIds = new Set(initialActivities.map((a) => a.id));
+    const demoObsIds = new Set(initialTeacherObservations.map((o) => o.id));
+    const demoIntIds = new Set(initialStudentInterests.map((i) => i.id));
+    const demoAnnIds = new Set(initialAnnouncements.map((a) => a.id));
+
+    setStudents((prev) => prev.filter((s) => !demoStudentIds.has(s.id) && !s.isDemo));
+    setTeachers((prev) => prev.filter((t) => !demoTeacherIds.has(t.id) && !t.isDemo));
+    setExtracurricularMembers((prev) => prev.filter((m) => !demoEkskulMemberIds.has(m.id)));
+    setAmbassadorMembers((prev) => prev.filter((m) => !demoAmbassadorMemberIds.has(m.id)));
+    setPortfolios((prev) => prev.filter((p) => !demoPortIds.has(p.id)));
+    setAchievements((prev) => prev.filter((a) => !demoAchIds.has(a.id)));
+    setActivities((prev) => prev.filter((a) => !demoActIds.has(a.id)));
+    setTeacherObservations((prev) => prev.filter((o) => !demoObsIds.has(o.id)));
+    setStudentInterests((prev) => prev.filter((i) => !demoIntIds.has(i.id)));
+    setAnnouncements((prev) => prev.filter((a) => !demoAnnIds.has(a.id)));
+
+    if (isFirebaseConfigured && db) {
+      try {
+        for (const id of demoStudentIds) await deleteDoc(doc(db, 'students', id));
+        for (const id of demoTeacherIds) await deleteDoc(doc(db, 'teachers', id));
+        for (const id of demoEkskulMemberIds) await deleteDoc(doc(db, 'extracurricularMembers', id));
+        for (const id of demoAmbassadorMemberIds) await deleteDoc(doc(db, 'ambassadorMembers', id));
+        for (const id of demoPortIds) await deleteDoc(doc(db, 'portfolios', id));
+        for (const id of demoAchIds) await deleteDoc(doc(db, 'achievements', id));
+        for (const id of demoActIds) await deleteDoc(doc(db, 'activities', id));
+        for (const id of demoObsIds) await deleteDoc(doc(db, 'teacherObservations', id));
+        for (const id of demoIntIds) await deleteDoc(doc(db, 'studentInterests', id));
+        for (const id of demoAnnIds) await deleteDoc(doc(db, 'announcements', id));
+      } catch (err: any) {
+        console.warn('Purge firestore dummy data notice:', err.message);
+      }
+    }
+    setIsDemoMode(false);
+    logAction('SYSTEM', 'Database', 'all', 'Membersihkan data dummy bawaan dari database');
   };
 
   const exportAllDataAsJson = (): string => {
@@ -1360,6 +1413,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         markNotificationAsRead,
         resetToDemoData,
         clearAllDemoData,
+        purgeOnlyDummyData,
         exportAllDataAsJson,
         importAllDataFromJson,
         seedInitialDataToFirestore

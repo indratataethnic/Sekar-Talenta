@@ -42,7 +42,9 @@ export const SettingsView: React.FC = () => {
     importAllDataFromJson,
     isCloudConnected,
     testCloudConnection,
-    seedInitialDataToFirestore
+    seedInitialDataToFirestore,
+    purgeOnlyDummyData,
+    clearAllDemoData
   } = useData();
 
   const { allUsers, isSuperAdmin, deleteUser, role } = useAuth();
@@ -66,6 +68,11 @@ export const SettingsView: React.FC = () => {
   const [isTestingCloud, setIsTestingCloud] = useState(false);
   const [cloudTestResult, setCloudTestResult] = useState<{ success: boolean; msg: string } | null>(null);
   const [isSeedingFirestore, setIsSeedingFirestore] = useState(false);
+  const [isPurgingDummy, setIsPurgingDummy] = useState(false);
+  const [isClearingAll, setIsClearingAll] = useState(false);
+  const [isPurgeDialogOpen, setIsPurgeDialogOpen] = useState(false);
+  const [isClearAllDialogOpen, setIsClearAllDialogOpen] = useState(false);
+  const [isSeedDialogOpen, setIsSeedDialogOpen] = useState(false);
   const [seedResult, setSeedResult] = useState<string | null>(null);
 
   // JSON Restore
@@ -116,6 +123,37 @@ export const SettingsView: React.FC = () => {
       setSeedResult('Gagal sinkronisasi ke Firestore: ' + err.message);
     } finally {
       setIsSeedingFirestore(false);
+      setIsSeedDialogOpen(false);
+    }
+  };
+
+  const handlePurgeDummyData = async () => {
+    setIsPurgingDummy(true);
+    setSeedResult(null);
+    try {
+      await purgeOnlyDummyData();
+      setSeedResult('Semua data dummy bawaan sistem berhasil dibersihkan dari database.');
+      setTimeout(() => setSeedResult(null), 4000);
+    } catch (err: any) {
+      setSeedResult('Gagal membersihkan data dummy: ' + err.message);
+    } finally {
+      setIsPurgingDummy(false);
+      setIsPurgeDialogOpen(false);
+    }
+  };
+
+  const handleClearAllData = async () => {
+    setIsClearingAll(true);
+    setSeedResult(null);
+    try {
+      await clearAllDemoData();
+      setSeedResult('Seluruh database berhasil dikosongkan. Anda dapat mulai mengisi data riil sekolah.');
+      setTimeout(() => setSeedResult(null), 4000);
+    } catch (err: any) {
+      setSeedResult('Gagal mengosongkan database: ' + err.message);
+    } finally {
+      setIsClearingAll(false);
+      setIsClearAllDialogOpen(false);
     }
   };
 
@@ -281,7 +319,7 @@ export const SettingsView: React.FC = () => {
                   {isTestingCloud ? 'Menguji...' : 'Uji Koneksi Firestore'}
                 </button>
                 <button
-                  onClick={handleSeedToFirestore}
+                  onClick={() => setIsSeedDialogOpen(true)}
                   disabled={isSeedingFirestore}
                   className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-amber-950 font-extrabold text-xs shadow-md transition-all active:scale-95 disabled:opacity-50"
                 >
@@ -391,6 +429,37 @@ export const SettingsView: React.FC = () => {
               )}
             </Card>
           </div>
+
+          {/* Data Cleanup & Maintenance Card */}
+          <Card className="p-6 space-y-4 border-rose-200 bg-rose-50/30">
+            <div className="flex items-center gap-2 text-rose-900 font-bold">
+              <Trash2 className="w-5 h-5 text-rose-700" />
+              <h4>Pembersihan & Pengosongan Data (Database Maintenance)</h4>
+            </div>
+            <p className="text-xs text-slate-600 leading-relaxed">
+              Gunakan opsi di bawah ini jika terdapat data dummy/contoh otomatis yang ingin dibersihkan dari Cloud Firestore tanpa mengganggu data riil yang telah Anda masukkan secara manual.
+            </p>
+
+            <div className="flex flex-wrap items-center gap-3 pt-2">
+              <button
+                onClick={() => setIsPurgeDialogOpen(true)}
+                disabled={isPurgingDummy}
+                className="px-4 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs shadow-xs transition-all active:scale-95 disabled:opacity-50 inline-flex items-center gap-2"
+              >
+                <RotateCcw className="w-4 h-4" />
+                {isPurgingDummy ? 'Membersihkan...' : 'Bersihkan Data Dummy Bawaan Saja'}
+              </button>
+
+              <button
+                onClick={() => setIsClearAllDialogOpen(true)}
+                disabled={isClearingAll}
+                className="px-4 py-2.5 rounded-xl bg-rose-700 hover:bg-rose-800 text-white font-bold text-xs shadow-xs transition-all active:scale-95 disabled:opacity-50 inline-flex items-center gap-2"
+              >
+                <Trash2 className="w-4 h-4" />
+                {isClearingAll ? 'Mengosongkan...' : 'Kosongkan Seluruh Database (Mulai dari Nol)'}
+              </button>
+            </div>
+          </Card>
         </div>
       )}
 
@@ -722,6 +791,39 @@ export const SettingsView: React.FC = () => {
         message="Akun pengguna ini akan dihapus dari sistem."
         type="danger"
         confirmText="Hapus Akun"
+      />
+
+      {/* Confirm Purge Dummy Data Dialog */}
+      <ConfirmDialog
+        isOpen={isPurgeDialogOpen}
+        onClose={() => setIsPurgeDialogOpen(false)}
+        onConfirm={handlePurgeDummyData}
+        title="Bersihkan Semua Data Dummy / Bawaan?"
+        message="Tindakan ini akan menghapus seluruh data demonstrasi/dummy bawaan dari Cloud Firestore dan aplikasi. Data murid atau entri riil yang Anda buat sendiri TIDAK akan terhapus."
+        type="danger"
+        confirmText="Ya, Bersihkan Data Dummy"
+      />
+
+      {/* Confirm Clear All Database Dialog */}
+      <ConfirmDialog
+        isOpen={isClearAllDialogOpen}
+        onClose={() => setIsClearAllDialogOpen(false)}
+        onConfirm={handleClearAllData}
+        title="Kosongkan Seluruh Database?"
+        message="PERINGATAN: Tindakan ini akan mengosongkan SELURUH isi pangkalan data (murid, kelas, ekskul, presensi, portofolio) dari Cloud Firestore dan penyimpanan lokal. Pastikan Anda telah mengunduh berkas cadangan JSON sebelum melanjutkan."
+        type="danger"
+        confirmText="Ya, Kosongkan Seluruh Database"
+      />
+
+      {/* Confirm Manual Seed Data Dialog */}
+      <ConfirmDialog
+        isOpen={isSeedDialogOpen}
+        onClose={() => setIsSeedDialogOpen(false)}
+        onConfirm={handleSeedToFirestore}
+        title="Sinkronkan Data Standar ke Cloud Firestore?"
+        message="Tindakan ini akan mengunggah data master dan demonstrasi awal UPT SDN Karanganyar ke Cloud Firestore secara manual."
+        type="info"
+        confirmText="Ya, Sinkronkan Data"
       />
     </div>
   );

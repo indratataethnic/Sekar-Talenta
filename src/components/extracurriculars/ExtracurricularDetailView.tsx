@@ -25,6 +25,8 @@ import { Card } from '../common/Card';
 import { Badge } from '../common/Badge';
 import { ExtracurricularRegisterModal } from './ExtracurricularRegisterModal';
 import { ExtracurricularGradeModal } from './ExtracurricularGradeModal';
+import { ExtracurricularReportExportModal } from './ExtracurricularReportExportModal';
+import { FileSpreadsheet } from 'lucide-react';
 import { ConfirmDialog } from '../common/ConfirmDialog';
 
 interface ExtracurricularDetailViewProps {
@@ -49,6 +51,7 @@ export const ExtracurricularDetailView: React.FC<ExtracurricularDetailViewProps>
 
   const [activeTab, setActiveTab] = useState<'members' | 'goals' | 'activities' | 'achievements'>('members');
   const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [gradingMember, setGradingMember] = useState<ExtracurricularMember | null>(null);
   const [deletingMemberId, setDeletingMemberId] = useState<string | null>(null);
 
@@ -90,14 +93,24 @@ export const ExtracurricularDetailView: React.FC<ExtracurricularDetailViewProps>
           <ArrowLeft className="w-4 h-4" /> Kembali ke Daftar Ekstrakurikuler
         </button>
 
-        {canManageExtracurriculars && (
+        <div className="flex items-center gap-2">
           <button
-            onClick={onEdit}
+            type="button"
+            onClick={() => setIsExportModalOpen(true)}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 text-xs font-bold transition-all shadow-2xs"
           >
-            <Edit2 className="w-3.5 h-3.5" /> Edit Ekstrakurikuler
+            <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-700" /> Ekspor Nilai Rapor
           </button>
-        )}
+
+          {canManageExtracurriculars && (
+            <button
+              onClick={onEdit}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 text-xs font-bold transition-all shadow-2xs"
+            >
+              <Edit2 className="w-3.5 h-3.5" /> Edit Ekstrakurikuler
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Hero Banner */}
@@ -456,6 +469,12 @@ export const ExtracurricularDetailView: React.FC<ExtracurricularDetailViewProps>
         onClose={() => setGradingMember(null)}
         member={gradingMember}
         extracurricular={extracurricular}
+      />
+
+      <ExtracurricularReportExportModal
+        isOpen={isExportModalOpen}
+        onClose={() => setIsExportModalOpen(false)}
+        defaultEkskulId={extracurricular.id}
       />
 
       <ConfirmDialog

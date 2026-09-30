@@ -21,6 +21,8 @@ import { Badge } from '../common/Badge';
 import { ConfirmDialog } from '../common/ConfirmDialog';
 import { ExtracurricularDetailView } from './ExtracurricularDetailView';
 import { ExtracurricularFormModal } from './ExtracurricularFormModal';
+import { ExtracurricularReportExportModal } from './ExtracurricularReportExportModal';
+import { FileSpreadsheet } from 'lucide-react';
 
 export const ExtracurricularListView: React.FC = () => {
   const { extracurriculars, extracurricularMembers, deleteExtracurricular } = useData();
@@ -29,6 +31,7 @@ export const ExtracurricularListView: React.FC = () => {
 
   const [selectedEkskul, setSelectedEkskul] = useState<Extracurricular | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [editingEkskul, setEditingEkskul] = useState<Extracurricular | null>(null);
   const [deletingEkskul, setDeletingEkskul] = useState<Extracurricular | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
@@ -93,17 +96,27 @@ export const ExtracurricularListView: React.FC = () => {
           </p>
         </div>
 
-        {canManageExtracurriculars && (
+        <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">
           <button
-            onClick={() => {
-              setEditingEkskul(null);
-              setIsFormOpen(true);
-            }}
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold shadow-xs active:scale-95 self-start sm:self-auto"
+            type="button"
+            onClick={() => setIsExportModalOpen(true)}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 text-xs font-bold transition-all shadow-2xs active:scale-95"
           >
-            <Plus className="w-4 h-4" /> Tambah Ekstrakurikuler
+            <FileSpreadsheet className="w-4 h-4 text-emerald-700" /> Ekspor Nilai Rapor (e-Rapor)
           </button>
-        )}
+
+          {canManageExtracurriculars && (
+            <button
+              onClick={() => {
+                setEditingEkskul(null);
+                setIsFormOpen(true);
+              }}
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold shadow-xs active:scale-95"
+            >
+              <Plus className="w-4 h-4" /> Tambah Ekstrakurikuler
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Filter & Search Bar */}
@@ -351,6 +364,11 @@ export const ExtracurricularListView: React.FC = () => {
           setEditingEkskul(null);
         }}
         ekskulToEdit={editingEkskul}
+      />
+
+      <ExtracurricularReportExportModal
+        isOpen={isExportModalOpen}
+        onClose={() => setIsExportModalOpen(false)}
       />
 
       <ConfirmDialog
