@@ -153,29 +153,29 @@ function sanitizeForFirestore<T>(data: T): T {
 
 export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { currentUser } = useAuth();
-  const [isDemoMode, setIsDemoMode] = useState<boolean>(true);
+  const [isDemoMode, setIsDemoMode] = useState<boolean>(false);
   const [isCloudConnected, setIsCloudConnected] = useState<boolean>(false);
 
-  // States
+  // States - Clean default state without auto-filling dummy data
   const [schoolProfile, setSchoolProfile] = useState<SchoolProfile>(() => loadStored('school_profile', initialSchoolProfile));
   const [classes] = useState<SchoolClass[]>(() => loadStored('classes', initialClasses));
   const [talentCategories] = useState<TalentCategory[]>(() => loadStored('talent_categories', initialTalentCategories));
   const [ambassadorTypes, setAmbassadorTypes] = useState<AmbassadorType[]>(() => loadStored('ambassador_types', initialAmbassadorTypes));
   const [extracurriculars, setExtracurriculars] = useState<Extracurricular[]>(() => loadStored('extracurriculars', initialExtracurriculars));
-  const [students, setStudents] = useState<Student[]>(() => loadStored('students', initialStudents));
-  const [teachers, setTeachers] = useState<Teacher[]>(() => loadStored('teachers', initialTeachers));
-  const [studentInterests, setStudentInterests] = useState<StudentInterest[]>(() => loadStored('student_interests', initialStudentInterests));
-  const [teacherObservations, setTeacherObservations] = useState<TeacherObservation[]>(() => loadStored('teacher_observations', initialTeacherObservations));
-  const [ambassadorMembers, setAmbassadorMembers] = useState<AmbassadorMember[]>(() => loadStored('ambassador_members', initialAmbassadorMembers));
-  const [ambassadorPrograms, setAmbassadorPrograms] = useState<AmbassadorProgram[]>(() => loadStored('ambassador_programs', initialAmbassadorPrograms));
-  const [extracurricularMembers, setExtracurricularMembers] = useState<ExtracurricularMember[]>(() => loadStored('extracurricular_members', initialExtracurricularMembers));
-  const [activities, setActivities] = useState<Activity[]>(() => loadStored('activities', initialActivities));
-  const [attendanceSessions, setAttendanceSessions] = useState<AttendanceSession[]>(() => loadStored('attendance_sessions', initialAttendanceSessions));
-  const [portfolios, setPortfolios] = useState<Portfolio[]>(() => loadStored('portfolios', initialPortfolios));
-  const [achievements, setAchievements] = useState<Achievement[]>(() => loadStored('achievements', initialAchievements));
-  const [announcements, setAnnouncements] = useState<Announcement[]>(() => loadStored('announcements', initialAnnouncements));
+  const [students, setStudents] = useState<Student[]>(() => loadStored('students', []));
+  const [teachers, setTeachers] = useState<Teacher[]>(() => loadStored('teachers', []));
+  const [studentInterests, setStudentInterests] = useState<StudentInterest[]>(() => loadStored('student_interests', []));
+  const [teacherObservations, setTeacherObservations] = useState<TeacherObservation[]>(() => loadStored('teacher_observations', []));
+  const [ambassadorMembers, setAmbassadorMembers] = useState<AmbassadorMember[]>(() => loadStored('ambassador_members', []));
+  const [ambassadorPrograms, setAmbassadorPrograms] = useState<AmbassadorProgram[]>(() => loadStored('ambassador_programs', []));
+  const [extracurricularMembers, setExtracurricularMembers] = useState<ExtracurricularMember[]>(() => loadStored('extracurricular_members', []));
+  const [activities, setActivities] = useState<Activity[]>(() => loadStored('activities', []));
+  const [attendanceSessions, setAttendanceSessions] = useState<AttendanceSession[]>(() => loadStored('attendance_sessions', []));
+  const [portfolios, setPortfolios] = useState<Portfolio[]>(() => loadStored('portfolios', []));
+  const [achievements, setAchievements] = useState<Achievement[]>(() => loadStored('achievements', []));
+  const [announcements, setAnnouncements] = useState<Announcement[]>(() => loadStored('announcements', []));
   const [notifications, setNotifications] = useState<NotificationItem[]>(() => loadStored('notifications', []));
-  const [auditLogs, setAuditLogs] = useState<AuditLog[]>(() => loadStored('audit_logs', initialAuditLogs));
+  const [auditLogs, setAuditLogs] = useState<AuditLog[]>(() => loadStored('audit_logs', []));
 
   // Sync to LocalStorage for offline durability
   useEffect(() => { localStorage.setItem(PREFIX + 'school_profile', JSON.stringify(schoolProfile)); }, [schoolProfile]);
@@ -1241,9 +1241,11 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const demoTeacherIds = new Set(initialTeachers.map((t) => t.id));
     const demoEkskulMemberIds = new Set(initialExtracurricularMembers.map((m) => m.id));
     const demoAmbassadorMemberIds = new Set(initialAmbassadorMembers.map((m) => m.id));
+    const demoAmbassadorProgIds = new Set(initialAmbassadorPrograms.map((p) => p.id));
     const demoPortIds = new Set(initialPortfolios.map((p) => p.id));
     const demoAchIds = new Set(initialAchievements.map((a) => a.id));
     const demoActIds = new Set(initialActivities.map((a) => a.id));
+    const demoAttIds = new Set(initialAttendanceSessions.map((s) => s.id));
     const demoObsIds = new Set(initialTeacherObservations.map((o) => o.id));
     const demoIntIds = new Set(initialStudentInterests.map((i) => i.id));
     const demoAnnIds = new Set(initialAnnouncements.map((a) => a.id));
@@ -1252,9 +1254,11 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setTeachers((prev) => prev.filter((t) => !demoTeacherIds.has(t.id) && !t.isDemo));
     setExtracurricularMembers((prev) => prev.filter((m) => !demoEkskulMemberIds.has(m.id)));
     setAmbassadorMembers((prev) => prev.filter((m) => !demoAmbassadorMemberIds.has(m.id)));
+    setAmbassadorPrograms((prev) => prev.filter((p) => !demoAmbassadorProgIds.has(p.id)));
     setPortfolios((prev) => prev.filter((p) => !demoPortIds.has(p.id)));
     setAchievements((prev) => prev.filter((a) => !demoAchIds.has(a.id)));
     setActivities((prev) => prev.filter((a) => !demoActIds.has(a.id)));
+    setAttendanceSessions((prev) => prev.filter((s) => !demoAttIds.has(s.id)));
     setTeacherObservations((prev) => prev.filter((o) => !demoObsIds.has(o.id)));
     setStudentInterests((prev) => prev.filter((i) => !demoIntIds.has(i.id)));
     setAnnouncements((prev) => prev.filter((a) => !demoAnnIds.has(a.id)));
@@ -1265,9 +1269,11 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         for (const id of demoTeacherIds) await deleteDoc(doc(db, 'teachers', id));
         for (const id of demoEkskulMemberIds) await deleteDoc(doc(db, 'extracurricularMembers', id));
         for (const id of demoAmbassadorMemberIds) await deleteDoc(doc(db, 'ambassadorMembers', id));
+        for (const id of demoAmbassadorProgIds) await deleteDoc(doc(db, 'ambassadorPrograms', id));
         for (const id of demoPortIds) await deleteDoc(doc(db, 'portfolios', id));
         for (const id of demoAchIds) await deleteDoc(doc(db, 'achievements', id));
         for (const id of demoActIds) await deleteDoc(doc(db, 'activities', id));
+        for (const id of demoAttIds) await deleteDoc(doc(db, 'attendanceSessions', id));
         for (const id of demoObsIds) await deleteDoc(doc(db, 'teacherObservations', id));
         for (const id of demoIntIds) await deleteDoc(doc(db, 'studentInterests', id));
         for (const id of demoAnnIds) await deleteDoc(doc(db, 'announcements', id));
