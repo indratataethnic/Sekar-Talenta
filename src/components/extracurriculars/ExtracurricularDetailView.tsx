@@ -50,7 +50,13 @@ export const ExtracurricularDetailView: React.FC<ExtracurricularDetailViewProps>
   const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
   const [deletingMemberId, setDeletingMemberId] = useState<string | null>(null);
 
-  const members = extracurricularMembers.filter((m) => m.extracurricularId === extracurricular.id);
+  const members = extracurricularMembers.filter(
+    (m) =>
+      m.extracurricularId === extracurricular.id ||
+      m.extracurricularId === extracurricular.code ||
+      (m.extracurricularName && extracurricular.name && m.extracurricularName.toLowerCase().trim().includes(extracurricular.name.toLowerCase().trim())) ||
+      (m.extracurricularName && extracurricular.name && extracurricular.name.toLowerCase().trim().includes(m.extracurricularName.toLowerCase().trim()))
+  );
   const myActivities = activities.filter((a) => a.referenceId === extracurricular.id);
   const myAchievements = achievements.filter((ach) =>
     ach.category.toLowerCase().includes(extracurricular.name.toLowerCase())

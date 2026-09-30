@@ -61,7 +61,13 @@ export const DashboardCharts: React.FC = () => {
 
   // 3. Peserta per Ekstrakurikuler
   const ekskulChartData = extracurriculars.map((e) => {
-    const memberCount = extracurricularMembers.filter((m) => m.extracurricularId === e.id).length;
+    const memberCount = extracurricularMembers.filter(
+      (m) =>
+        m.extracurricularId === e.id ||
+        m.extracurricularId === e.code ||
+        (m.extracurricularName && e.name && m.extracurricularName.toLowerCase().trim().includes(e.name.toLowerCase().trim())) ||
+        (m.extracurricularName && e.name && e.name.toLowerCase().trim().includes(m.extracurricularName.toLowerCase().trim()))
+    ).length;
     return {
       name: e.name.length > 12 ? e.name.substring(0, 12) + '...' : e.name,
       fullName: e.name,

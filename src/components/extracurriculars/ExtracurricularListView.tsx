@@ -145,7 +145,13 @@ export const ExtracurricularListView: React.FC = () => {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredEkskuls.map((ekskul, eIdx) => {
-            const members = extracurricularMembers.filter((m) => m.extracurricularId === ekskul.id);
+            const members = extracurricularMembers.filter(
+              (m) =>
+                m.extracurricularId === ekskul.id ||
+                m.extracurricularId === ekskul.code ||
+                (m.extracurricularName && ekskul.name && m.extracurricularName.toLowerCase().trim().includes(ekskul.name.toLowerCase().trim())) ||
+                (m.extracurricularName && ekskul.name && ekskul.name.toLowerCase().trim().includes(m.extracurricularName.toLowerCase().trim()))
+            );
             const capacity = ekskul.capacity || 30;
             const capacityPercent = Math.min(100, Math.round((members.length / capacity) * 100));
 
@@ -210,8 +216,46 @@ export const ExtracurricularListView: React.FC = () => {
                     </p>
                   </div>
 
+                  {/* Registered Students Preview Section */}
+                  <div className="pt-2 border-t border-slate-100/80">
+                    <div className="flex items-center justify-between text-[11px] font-bold text-slate-700 mb-1.5">
+                      <span className="flex items-center gap-1">
+                        <Users className="w-3.5 h-3.5 text-blue-600" />
+                        Murid Terdaftar ({members.length}):
+                      </span>
+                      {members.length > 0 && (
+                        <span className="text-[10px] text-emerald-700 font-semibold bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                          Aktif
+                        </span>
+                      )}
+                    </div>
+
+                    {members.length === 0 ? (
+                      <p className="text-[11px] text-slate-400 italic bg-slate-50 p-2 rounded-xl">
+                        Belum ada murid terdaftar. Klik detail untuk mendaftarkan.
+                      </p>
+                    ) : (
+                      <div className="flex flex-wrap gap-1">
+                        {members.slice(0, 4).map((m, mIdx) => (
+                          <span
+                            key={`m-preview-${m.id || mIdx}`}
+                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-blue-50 text-blue-900 border border-blue-200/80 text-[10.5px] font-semibold"
+                          >
+                            <span>👤 {m.studentName}</span>
+                            <span className="text-[9.5px] text-blue-600 font-medium">({m.classId})</span>
+                          </span>
+                        ))}
+                        {members.length > 4 && (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-lg bg-slate-100 text-slate-600 text-[10px] font-bold">
+                            +{members.length - 4} murid lainnya
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
                   {/* Progress bar */}
-                  <div className="pt-2">
+                  <div className="pt-1">
                     <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
                       <div
                         className={`h-full rounded-full ${
