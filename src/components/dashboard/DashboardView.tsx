@@ -153,6 +153,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
       {/* Main Overall Statistics Grid */}
       <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
+          key="stat-students"
           title={isClassScoped ? `Murid ${assignedClass}` : "Total Murid Sekolah"}
           value={totalStudents}
           subtitle={isClassScoped ? `Terdaftar aktif di rombel Anda` : "Terdaftar di 12 Rombel Kelas"}
@@ -161,6 +162,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
           onClick={() => onNavigate(isMurid ? 'talents' : 'students')}
         />
         <StatCard
+          key="stat-ambassadors"
           title={isClassScoped ? `Kader Duta ${assignedClass}` : "Anggota Duta Sekolah"}
           value={totalAmbassadors}
           subtitle={isClassScoped ? `Dari rombel ${assignedClass}` : `${totalAmbassadorTypes} Bidang Duta SEKAR MELATI`}
@@ -169,6 +171,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
           onClick={() => onNavigate('ambassadors')}
         />
         <StatCard
+          key="stat-ekskul"
           title={isClassScoped ? `Peserta Ekskul ${assignedClass}` : "Peserta Ekstrakurikuler"}
           value={totalEkskulParticipants}
           subtitle={isClassScoped ? `Murid rombel aktif berkegiatan` : `${totalExtracurriculars} Pilihan Kegiatan Terbuka`}
@@ -177,6 +180,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
           onClick={() => onNavigate('extracurriculars')}
         />
         <StatCard
+          key="stat-portfolios"
           title={isClassScoped ? `Karya Murid ${assignedClass}` : "Karya & Piagam Prestasi"}
           value={totalPortfoliosAndAchievements}
           subtitle={isClassScoped ? `Karya & sertifikat murid Anda` : `${totalActivitiesDone} Kegiatan Selesai Terlaksana`}
@@ -215,8 +219,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                 Belum ada jadwal kegiatan mendatang.
               </Card>
             ) : (
-              upcomingActivities.map((act) => (
-                <Card key={act.id} className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              upcomingActivities.map((act, idx) => (
+                <Card key={act.id ? `act-${act.id}` : `act-idx-${idx}`} className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                   <div className="space-y-1">
                     <div className="flex flex-wrap items-center gap-2">
                       <Badge
@@ -266,8 +270,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
           </div>
 
           <div className="space-y-3">
-            {announcements.slice(0, 2).map((ann) => (
-              <Card key={ann.id} className="p-4 space-y-2 border-l-4 border-l-amber-500">
+            {announcements.slice(0, 2).map((ann, idx) => (
+              <Card key={ann.id ? `ann-${ann.id}` : `ann-idx-${idx}`} className="p-4 space-y-2 border-l-4 border-l-amber-500">
                 <div className="flex items-center justify-between">
                   <Badge variant={ann.category === 'duta' ? 'purple' : ann.category === 'ekskul' ? 'blue' : 'emerald'} size="sm">
                     {ann.category.toUpperCase()}

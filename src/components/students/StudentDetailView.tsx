@@ -30,6 +30,7 @@ import { useAuth } from '../../context/AuthContext';
 import { Card } from '../common/Card';
 import { Badge } from '../common/Badge';
 import { StudentProfileCardModal } from './StudentProfileCardModal';
+import { ExtracurricularRegisterModal } from '../extracurriculars/ExtracurricularRegisterModal';
 
 interface StudentDetailViewProps {
   student: Student;
@@ -54,6 +55,7 @@ export const StudentDetailView: React.FC<StudentDetailViewProps> = ({ student, o
   const { canVerifyPortfolio, isGuruKelas, currentUser } = useAuth();
   const [activeTab, setActiveTab] = useState<'profile' | 'talents' | 'ambassador' | 'ekskul' | 'portfolio' | 'history' | 'growth'>('profile');
   const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
+  const [isRegisterEkskulOpen, setIsRegisterEkskulOpen] = useState(false);
 
   // New observation state
   const [obsNotes, setObsNotes] = useState('');
@@ -408,11 +410,24 @@ export const StudentDetailView: React.FC<StudentDetailViewProps> = ({ student, o
               <Layers className="w-4 h-4 text-blue-600" />
               Keikutsertaan Ekstrakurikuler
             </h3>
+
+            <button
+              onClick={() => setIsRegisterEkskulOpen(true)}
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold shadow-xs active:scale-95"
+            >
+              <Plus className="w-4 h-4" /> Daftarkan ke Ekstrakurikuler
+            </button>
           </div>
 
           {myEkskuls.length === 0 ? (
-            <Card className="text-center py-10 text-slate-500 text-xs">
-              Murid belum terdaftar pada kegiatan ekstrakurikuler.
+            <Card className="text-center py-10 text-slate-500 text-xs space-y-3">
+              <p>Murid belum terdaftar pada kegiatan ekstrakurikuler.</p>
+              <button
+                onClick={() => setIsRegisterEkskulOpen(true)}
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold shadow-xs transition-all"
+              >
+                <Plus className="w-4 h-4" /> Daftarkan Ke Ekstrakurikuler Sekarang
+              </button>
             </Card>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -662,6 +677,13 @@ export const StudentDetailView: React.FC<StudentDetailViewProps> = ({ student, o
       <StudentProfileCardModal
         isOpen={isPrintModalOpen}
         onClose={() => setIsPrintModalOpen(false)}
+        student={student}
+      />
+
+      {/* Register Extracurricular Modal for this Student */}
+      <ExtracurricularRegisterModal
+        isOpen={isRegisterEkskulOpen}
+        onClose={() => setIsRegisterEkskulOpen(false)}
         student={student}
       />
     </div>

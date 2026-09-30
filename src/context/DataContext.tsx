@@ -243,14 +243,15 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Automatic boot check: seed if Firestore database is empty
+  // Automatic boot check: seed if Firestore database is empty or missing core collections
   useEffect(() => {
     if (!isFirebaseConfigured || !db) return;
     const checkAndSeed = async () => {
       try {
-        const snap = await getDocs(collection(db, 'students'));
-        if (snap.empty) {
-          console.info('Firestore database is empty. Seeding initial records to Cloud Database...');
+        const studentSnap = await getDocs(collection(db, 'students'));
+        const ekskulMemberSnap = await getDocs(collection(db, 'extracurricularMembers'));
+        if (studentSnap.empty || ekskulMemberSnap.empty) {
+          console.info('Firestore records missing. Seeding initial data to Cloud Database...');
           await seedInitialDataToFirestore();
         }
       } catch (err) {
@@ -455,9 +456,42 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     );
     logAction('UPDATE', 'Student', id, `Memperbarui data murid ID ${id}`);
 
+    // Synchronize studentName & classId across related collections
+    const subUpdates: { studentName?: string; classId?: string; studentNis?: string } = {};
+    if (updates.fullName) subUpdates.studentName = updates.fullName;
+    if (updates.classId) subUpdates.classId = updates.classId;
+    if (updates.nis || updates.nisn) subUpdates.studentNis = updates.nis || updates.nisn;
+
+    if (Object.keys(subUpdates).length > 0) {
+      setExtracurricularMembers((prev) =>
+        prev.map((m) => (m.studentId === id ? { ...m, ...subUpdates } : m))
+      );
+      setAmbassadorMembers((prev) =>
+        prev.map((m) => (m.studentId === id ? { ...m, ...subUpdates } : m))
+      );
+      setStudentInterests((prev) =>
+        prev.map((i) => (i.studentId === id ? { ...i, ...subUpdates } : i))
+      );
+      setTeacherObservations((prev) =>
+        prev.map((o) => (o.studentId === id ? { ...o, ...subUpdates } : o))
+      );
+    }
+
     if (isFirebaseConfigured && db) {
       try {
         await setDoc(doc(db, 'students', id), cleanUpdates, { merge: true });
+
+        if (Object.keys(subUpdates).length > 0) {
+          extracurricularMembers.filter((m) => m.studentId === id).forEach((m) => {
+            setDoc(doc(db, 'extracurricularMembers', m.id), sanitizeForFirestore(subUpdates), { merge: true }).catch(() => {});
+          });
+          ambassadorMembers.filter((m) => m.studentId === id).forEach((m) => {
+            setDoc(doc(db, 'ambassadorMembers', m.id), sanitizeForFirestore(subUpdates), { merge: true }).catch(() => {});
+          });
+          studentInterests.filter((i) => i.studentId === id).forEach((i) => {
+            setDoc(doc(db, 'studentInterests', i.id), sanitizeForFirestore(subUpdates), { merge: true }).catch(() => {});
+          });
+        }
       } catch (err) {
         handleFirestoreError(err, OperationType.UPDATE, `students/${id}`);
       }

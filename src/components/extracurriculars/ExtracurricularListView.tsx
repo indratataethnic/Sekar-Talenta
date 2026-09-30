@@ -144,7 +144,7 @@ export const ExtracurricularListView: React.FC = () => {
         </Card>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredEkskuls.map((ekskul) => {
+          {filteredEkskuls.map((ekskul, eIdx) => {
             const members = extracurricularMembers.filter((m) => m.extracurricularId === ekskul.id);
             const capacity = ekskul.capacity || 30;
             const capacityPercent = Math.min(100, Math.round((members.length / capacity) * 100));
@@ -154,15 +154,17 @@ export const ExtracurricularListView: React.FC = () => {
                 ? ekskul.coaches
                 : [
                     {
-                      name: ekskul.coachName,
+                      name: ekskul.coachName || 'Pembina',
                       role: 'Pembina',
                       type: 'internal' as const
                     }
                   ];
 
+            const itemKey = ekskul.id ? `ekskul-${ekskul.id}` : `ekskul-idx-${eIdx}-${ekskul.name}`;
+
             return (
               <Card
-                key={ekskul.id}
+                key={itemKey}
                 hoverable
                 onClick={() => setSelectedEkskul(ekskul)}
                 className="flex flex-col justify-between p-5 border-slate-200/80 group"
@@ -235,7 +237,7 @@ export const ExtracurricularListView: React.FC = () => {
                     <div className="flex flex-wrap gap-1 pt-0.5">
                       {coachList.map((c, idx) => (
                         <div
-                          key={idx}
+                          key={`coach-${ekskul.id || eIdx}-${c.name || 'unnamed'}-${idx}`}
                           className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-50 border border-slate-200/80 text-[10.5px]"
                         >
                           {c.type === 'external' ? (

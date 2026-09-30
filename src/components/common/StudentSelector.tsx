@@ -66,6 +66,16 @@ export const StudentSelector: React.FC<StudentSelectorProps> = ({
     return students.find((s) => s.id === selectedStudentId);
   }, [students, selectedStudentId]);
 
+  // Auto-sync selectedStudentId if current selection is not in filtered list
+  useEffect(() => {
+    if (filteredStudents.length > 0) {
+      const exists = filteredStudents.some((s) => s.id === selectedStudentId);
+      if (!exists) {
+        onSelectStudent(filteredStudents[0]);
+      }
+    }
+  }, [filteredStudents, selectedStudentId, onSelectStudent]);
+
   // Handle select change
   const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const student = students.find((s) => s.id === e.target.value);

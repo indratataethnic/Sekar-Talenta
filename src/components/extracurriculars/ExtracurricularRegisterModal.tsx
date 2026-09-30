@@ -7,55 +7,77 @@ import { StudentSelector } from '../common/StudentSelector';
 interface ExtracurricularRegisterModalProps {
   isOpen: boolean;
   onClose: () => void;
-  extracurricular: Extracurricular;
+  extracurricular?: Extracurricular | null;
+  student?: Student | null;
 }
 
 export const ExtracurricularRegisterModal: React.FC<ExtracurricularRegisterModalProps> = ({
   isOpen,
   onClose,
   extracurricular,
+  student,
 }) => {
-  const { students, registerExtracurricularMember, extracurricularMembers } = useData();
+  const { students, extracurriculars, registerExtracurricularMember, extracurricularMembers } = useData();
 
-  const [selectedStudentId, setSelectedStudentId] = useState(students[0]?.id || '');
+  const [selectedStudentId, setSelectedStudentId] = useState('');
+  const [selectedEkskulId, setSelectedEkskulId] = useState('');
   const [coachNotes, setCoachNotes] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errMsg, setErrMsg] = useState('');
 
   useEffect(() => {
     if (isOpen) {
-      if (students.length > 0 && !selectedStudentId) {
-        setSelectedStudentId(students[0].id);
-      }
       setErrMsg('');
       setCoachNotes('');
+      if (student) {
+        setSelectedStudentId(student.id);
+        setSelectedEkskulId(extracurriculars[0]?.id || '');
+      } else if (extracurricular) {
+        setSelectedEkskulId(extracurricular.id);
+        if (students.length > 0) {
+          setSelectedStudentId(students[0].id);
+        } else {
+          setSelectedStudentId('');
+        }
+      }
     }
-  }, [isOpen, students]);
+  }, [isOpen, extracurricular, student, students, extracurriculars]);
 
-  const currentMembers = extracurricularMembers.filter((m) => m.extracurricularId === extracurricular.id);
-  const isFull = extracurricular.capacity ? currentMembers.length >= extracurricular.capacity : false;
+  const activeEkskul = extracurricular || extracurriculars.find((e) => e.id === selectedEkskulId) || extracurriculars[0];
+  const targetStudent = student || students.find((s) => s.id === selectedStudentId);
+
+  const currentMembers = activeEkskul ? extracurricularMembers.filter((m) => m.extracurricularId === activeEkskul.id) : [];
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const student = students.find((s) => s.id === selectedStudentId);
-    if (!student) return;
+    setErrMsg('');
+
+    if (!activeEkskul) {
+      setErrMsg('Silakan pilih kegiatan ekstrakurikuler.');
+      return;
+    }
+
+    if (!targetStudent) {
+      setErrMsg('Silakan pilih murid yang didaftarkan terlebih dahulu.');
+      return;
+    }
 
     // Check if already registered
-    const already = currentMembers.find((m) => m.studentId === student.id);
+    const already = currentMembers.find((m) => m.studentId === targetStudent.id && m.status === 'aktif');
     if (already) {
-      setErrMsg('Murid ini sudah terdaftar pada ekstrakurikuler ini.');
+      setErrMsg(`Murid "${targetStudent.fullName}" sudah terdaftar aktif di ekstrakurikuler ${activeEkskul.name}.`);
       return;
     }
 
     setIsSubmitting(true);
     try {
       await registerExtracurricularMember({
-        extracurricularId: extracurricular.id,
-        extracurricularName: extracurricular.name,
-        studentId: student.id,
-        studentName: student.fullName,
-        studentNis: student.nis || student.nisn,
-        classId: student.classId,
+        extracurricularId: activeEkskul.id,
+        extracurricularName: activeEkskul.name,
+        studentId: targetStudent.id,
+        studentName: targetStudent.fullName,
+        studentNis: targetStudent.nis || targetStudent.nisn,
+        classId: targetStudent.classId,
         joinedAt: new Date().toISOString().split('T')[0],
         status: 'aktif',
         attendancePercentage: 100,
@@ -64,17 +86,26 @@ export const ExtracurricularRegisterModal: React.FC<ExtracurricularRegisterModal
       onClose();
       setCoachNotes('');
       setErrMsg('');
+    } catch (err: any) {
+      console.error('Error registering extracurricular member:', err);
+      setErrMsg(err?.message || 'Gagal menyimpan pendaftaran ekstrakurikuler. Coba lagi.');
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  if (!isOpen) return null;
+
   return (
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={`Pendaftaran ${extracurricular.name}`}
-      subtitle={`Kapasitas: ${currentMembers.length}/${extracurricular.capacity || 30} Murid`}
+      title={`Pendaftaran ${activeEkskul ? activeEkskul.name : 'Ekstrakurikuler'}`}
+      subtitle={
+        activeEkskul
+          ? `Kapasitas: ${currentMembers.length}/${activeEkskul.capacity || 30} Murid Terdaftar`
+          : 'Pilih murid dan ekstrakurikuler'
+      }
       maxWidth="md"
     >
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -84,12 +115,44 @@ export const ExtracurricularRegisterModal: React.FC<ExtracurricularRegisterModal
           </div>
         )}
 
-        <StudentSelector
-          selectedStudentId={selectedStudentId}
-          onSelectStudent={(st: Student) => setSelectedStudentId(st.id)}
-          label="Pilih Murid yang Didaftarkan (Cari Berdasarkan Kelas / Nama)"
-          required
-        />
+        {/* If student prop was provided, pick Extracurricular; otherwise pick Student */}
+        {student ? (
+          <div className="space-y-3">
+            <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-200">
+              <span className="text-[11px] font-bold text-emerald-800 block">Murid Terpilih:</span>
+              <p className="text-xs font-black text-slate-900">{student.fullName} ({student.classId})</p>
+              <p className="text-[11px] text-slate-500 font-mono">NISN: {student.nisn}</p>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">
+                Pilih Ekstrakurikuler yang Diikuti *
+              </label>
+              <select
+                value={selectedEkskulId}
+                onChange={(e) => setSelectedEkskulId(e.target.value)}
+                required
+                className="w-full px-3 py-2 text-xs font-bold rounded-xl border border-slate-300 focus:outline-emerald-600 bg-white"
+              >
+                {extracurriculars.map((ek) => {
+                  const mCount = extracurricularMembers.filter((m) => m.extracurricularId === ek.id && m.status === 'aktif').length;
+                  return (
+                    <option key={ek.id} value={ek.id}>
+                      {ek.name} ({ek.category}) • {mCount}/{ek.capacity || 30} Peserta
+                    </option>
+                  );
+                })}
+              </select>
+            </div>
+          </div>
+        ) : (
+          <StudentSelector
+            selectedStudentId={selectedStudentId}
+            onSelectStudent={(st: Student) => setSelectedStudentId(st.id)}
+            label="Pilih Murid yang Didaftarkan (Cari Berdasarkan Kelas / Nama)"
+            required
+          />
+        )}
 
         <div>
           <label className="block text-xs font-bold text-slate-700 mb-1">
