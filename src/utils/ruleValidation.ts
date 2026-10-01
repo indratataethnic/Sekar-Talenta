@@ -58,10 +58,39 @@ export function isPramukaEkskul(identifier: string): boolean {
 
 /**
  * Checks if an extracurricular code/id/name refers to TIK / Komputer.
+ * Strictly excludes non-TIK words containing 'tik' (e.g. 'membatik', 'batik', 'atletik').
  */
 export function isTikEkskul(identifier: string): boolean {
-  const lower = (identifier || '').toLowerCase();
-  return lower.includes('tik') || lower.includes('robotik') || lower.includes('komputer') || lower === 'ekskul_tik';
+  if (!identifier) return false;
+  const lower = identifier.toLowerCase().trim();
+
+  // Exclude non-TIK words that contain 'tik'
+  if (
+    lower.includes('batik') ||
+    lower.includes('atletik') ||
+    lower.includes('plastik') ||
+    lower.includes('praktik') ||
+    lower.includes('aritmatika') ||
+    lower.includes('estetika')
+  ) {
+    return false;
+  }
+
+  // Exact ID / Code match
+  if (lower === 'ekskul_tik' || lower === 'tik' || lower === 'code_tik') {
+    return true;
+  }
+
+  // Match standalone 'tik' word boundary or computer/technology keywords
+  const hasStandaloneTik = /\btik\b/i.test(lower) || /\bt\.i\.k\b/i.test(lower);
+  const isTechKeyword =
+    lower.includes('robotik') ||
+    lower.includes('komputer') ||
+    lower.includes('coding') ||
+    lower.includes('digital') ||
+    lower.includes('teknologi');
+
+  return hasStandaloneTik || isTechKeyword;
 }
 
 /**

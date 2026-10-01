@@ -292,7 +292,7 @@ export const TalentExplorationView: React.FC = () => {
       lowerSub.includes('canva') ||
       lowerSub.includes('robotik') ||
       lowerSub.includes('digital') ||
-      lowerSub.includes('tik') ||
+      /\btik\b/i.test(lowerSub) ||
       lowerCat.includes('teknologi')
     ) {
       const duta = findAmbassador(['digital', 'media', 'komputer']);
@@ -437,7 +437,7 @@ export const TalentExplorationView: React.FC = () => {
     await addAmbassadorMember({
       studentId: student.id,
       studentName: student.fullName,
-      studentNis: student.nis || student.nisn,
+      studentNis: student.nisn || student.nis || '',
       classId: student.classId,
       ambassadorTypeId: ambType.id,
       ambassadorTypeCode: ambType.code,
@@ -459,7 +459,7 @@ export const TalentExplorationView: React.FC = () => {
       extracurricularName: targetEk.name,
       studentId: student.id,
       studentName: student.fullName,
-      studentNis: student.nis || student.nisn,
+      studentNis: student.nisn || student.nis || '',
       classId: student.classId,
       joinedAt: new Date().toISOString().split('T')[0],
       status: 'aktif',

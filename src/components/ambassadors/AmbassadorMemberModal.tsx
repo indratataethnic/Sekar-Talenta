@@ -89,7 +89,7 @@ export const AmbassadorMemberModal: React.FC<AmbassadorMemberModalProps> = ({
         await addAmbassadorMember({
           studentId: student.id,
           studentName: student.fullName,
-          studentNis: student.nis || student.nisn,
+          studentNis: student.nisn || student.nis || '',
           classId: student.classId,
           ambassadorTypeId: ambassadorType.id,
           ambassadorTypeCode: ambassadorType.code,
@@ -138,7 +138,9 @@ export const AmbassadorMemberModal: React.FC<AmbassadorMemberModalProps> = ({
         ) : (
           <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
             <p className="text-xs font-bold text-slate-800">{memberToEdit.studentName}</p>
-            <p className="text-[11px] text-slate-500">{memberToEdit.classId} • NIS: {memberToEdit.studentNis}</p>
+            <p className="text-[11px] text-slate-500">
+              {memberToEdit.classId} • NISN: {students.find((s) => s.id === memberToEdit.studentId)?.nisn || memberToEdit.studentNis || '-'}
+            </p>
           </div>
         )}
 

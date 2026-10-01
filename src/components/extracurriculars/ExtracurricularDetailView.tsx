@@ -18,7 +18,7 @@ import {
   Building2,
   Sparkles
 } from 'lucide-react';
-import { Extracurricular, ExtracurricularMember, ExtracurricularCoach } from '../../types';
+import { Extracurricular, ExtracurricularMember, ExtracurricularCoach, Student } from '../../types';
 import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
 import { Card } from '../common/Card';
@@ -41,6 +41,7 @@ export const ExtracurricularDetailView: React.FC<ExtracurricularDetailViewProps>
   onEdit,
 }) => {
   const {
+    students,
     extracurricularMembers,
     activities,
     achievements,
@@ -331,17 +332,21 @@ export const ExtracurricularDetailView: React.FC<ExtracurricularDetailViewProps>
             </Card>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {members.map((member) => (
-                <Card key={member.id} className="space-y-2.5">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <h4 className="text-sm font-bold text-slate-900">{member.studentName}</h4>
-                      <p className="text-xs text-slate-500">{member.classId} • NIS: {member.studentNis}</p>
+              {members.map((member) => {
+                const st = students.find((s: Student) => s.id === member.studentId);
+                const displayNisn = st?.nisn || member.studentNis || '-';
+
+                return (
+                  <Card key={member.id} className="space-y-2.5">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <h4 className="text-sm font-bold text-slate-900">{member.studentName}</h4>
+                        <p className="text-xs text-slate-500">{member.classId} • NISN: {displayNisn}</p>
+                      </div>
+                      <Badge variant="blue" size="sm">
+                        {member.status.toUpperCase()}
+                      </Badge>
                     </div>
-                    <Badge variant="blue" size="sm">
-                      {member.status.toUpperCase()}
-                    </Badge>
-                  </div>
 
                   <div className="flex items-center justify-between text-xs pt-2 border-t border-slate-100">
                     <span className="text-slate-500">Tingkat Kehadiran:</span>
@@ -407,7 +412,8 @@ export const ExtracurricularDetailView: React.FC<ExtracurricularDetailViewProps>
                     )}
                   </div>
                 </Card>
-              ))}
+              );
+            })}
             </div>
           )}
         </div>

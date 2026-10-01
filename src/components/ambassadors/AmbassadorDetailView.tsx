@@ -18,7 +18,7 @@ import {
   Trash2,
   Edit2
 } from 'lucide-react';
-import { AmbassadorType, AmbassadorMember, AmbassadorProgram } from '../../types';
+import { AmbassadorType, AmbassadorMember, AmbassadorProgram, Student } from '../../types';
 import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
 import { Card } from '../common/Card';
@@ -39,6 +39,7 @@ export const AmbassadorDetailView: React.FC<AmbassadorDetailViewProps> = ({
   onEdit,
 }) => {
   const {
+    students,
     ambassadorMembers,
     ambassadorPrograms,
     activities,
@@ -227,13 +228,17 @@ export const AmbassadorDetailView: React.FC<AmbassadorDetailViewProps> = ({
             </Card>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {myMembers.map((member) => (
-                <Card key={member.id} className="space-y-3">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <h4 className="text-sm font-bold text-slate-900">{member.studentName}</h4>
-                      <p className="text-xs text-slate-500">{member.classId} • NIS: {member.studentNis}</p>
-                    </div>
+              {myMembers.map((member) => {
+                const st = students.find((s: Student) => s.id === member.studentId);
+                const displayNisn = st?.nisn || member.studentNis || '-';
+
+                return (
+                  <Card key={member.id} className="space-y-3">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <h4 className="text-sm font-bold text-slate-900">{member.studentName}</h4>
+                        <p className="text-xs text-slate-500">{member.classId} • NISN: {displayNisn}</p>
+                      </div>
                     <Badge variant="purple" size="sm">
                       {member.status.toUpperCase()}
                     </Badge>
@@ -271,7 +276,8 @@ export const AmbassadorDetailView: React.FC<AmbassadorDetailViewProps> = ({
                     </div>
                   )}
                 </Card>
-              ))}
+              );
+            })}
             </div>
           )}
         </div>

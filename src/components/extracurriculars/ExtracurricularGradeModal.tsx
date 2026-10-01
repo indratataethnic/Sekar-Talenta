@@ -18,8 +18,11 @@ export const ExtracurricularGradeModal: React.FC<ExtracurricularGradeModalProps>
   member,
   extracurricular,
 }) => {
-  const { updateExtracurricularMember, schoolProfile } = useData();
+  const { updateExtracurricularMember, schoolProfile, students } = useData();
   const { currentUser } = useAuth();
+
+  const targetStudent = students.find((s) => s.id === member?.studentId);
+  const studentNisnDisplay = targetStudent?.nisn || member?.studentNis || '-';
 
   const [grade, setGrade] = useState<'Sangat Baik' | 'Baik' | 'Cukup' | 'Perlu Bimbingan'>('Sangat Baik');
   const [attendancePercentage, setAttendancePercentage] = useState<number>(100);
@@ -134,7 +137,7 @@ export const ExtracurricularGradeModal: React.FC<ExtracurricularGradeModalProps>
           <div className="flex-1 min-w-0">
             <h4 className="text-xs font-black text-slate-900 truncate">{member.studentName}</h4>
             <p className="text-[11px] text-slate-500">
-              Rombel: <strong className="text-emerald-800">{member.classId}</strong> • NIS: {member.studentNis}
+              Rombel: <strong className="text-emerald-800">{member.classId}</strong> • NISN: {studentNisnDisplay}
             </p>
             <p className="text-[11px] text-emerald-900 font-bold mt-0.5">
               Kegiatan: {extracurricular?.name || member.extracurricularName}
