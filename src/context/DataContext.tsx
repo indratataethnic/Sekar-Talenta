@@ -106,6 +106,7 @@ interface DataContextType {
   registerExtracurricularMember: (data: Omit<ExtracurricularMember, 'id' | 'createdAt'>) => Promise<void>;
   registerBatchExtracurricularMembers: (membersData: Omit<ExtracurricularMember, 'id' | 'createdAt'>[]) => Promise<{ registeredCount: number; skippedCount: number; errors: string[] }>;
   updateExtracurricularMember: (id: string, updates: Partial<ExtracurricularMember>) => Promise<void>;
+  updateBatchExtracurricularMembers: (updatesList: { id: string; updates: Partial<ExtracurricularMember> }[]) => Promise<void>;
   removeExtracurricularMember: (id: string) => Promise<void>;
   addActivity: (data: Omit<Activity, 'id' | 'createdAt' | 'updatedAt'>) => Promise<Activity>;
   updateActivity: (id: string, updates: Partial<Activity>) => Promise<void>;
@@ -1035,6 +1036,37 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const updateBatchExtracurricularMembers = async (
+    updatesList: { id: string; updates: Partial<ExtracurricularMember> }[]
+  ) => {
+    if (updatesList.length === 0) return;
+
+    const updatesMap = new Map<string, Partial<ExtracurricularMember>>();
+    updatesList.forEach((item) => {
+      updatesMap.set(item.id, sanitizeForFirestore(item.updates));
+    });
+
+    setExtracurricularMembers((prev) =>
+      prev.map((m) => {
+        const u = updatesMap.get(m.id);
+        return u ? { ...m, ...u } : m;
+      })
+    );
+
+    logAction('UPDATE', 'ExtracurricularMember', 'batch', `Memperbarui penilaian massal ${updatesList.length} anggota ekskul`);
+
+    if (isFirebaseConfigured && db) {
+      try {
+        const promises = updatesList.map((item) =>
+          setDoc(doc(db, 'extracurricularMembers', item.id), sanitizeForFirestore(item.updates), { merge: true })
+        );
+        await Promise.all(promises);
+      } catch (err) {
+        handleFirestoreError(err, OperationType.UPDATE, `extracurricularMembers/batch_update`);
+      }
+    }
+  };
+
   const removeExtracurricularMember = async (id: string) => {
     setExtracurricularMembers((prev) => prev.filter((m) => m.id !== id));
     logAction('DELETE', 'ExtracurricularMember', id, `Menghapus anggota ekskul ID ${id}`);
@@ -1519,6 +1551,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         registerExtracurricularMember,
         registerBatchExtracurricularMembers,
         updateExtracurricularMember,
+        updateBatchExtracurricularMembers,
         removeExtracurricularMember,
         addActivity,
         updateActivity,

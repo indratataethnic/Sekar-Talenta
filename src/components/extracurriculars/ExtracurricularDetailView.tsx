@@ -16,7 +16,8 @@ import {
   School,
   Globe2,
   Building2,
-  Sparkles
+  Sparkles,
+  Zap
 } from 'lucide-react';
 import { Extracurricular, ExtracurricularMember, ExtracurricularCoach, Student } from '../../types';
 import { useData } from '../../context/DataContext';
@@ -25,6 +26,7 @@ import { Card } from '../common/Card';
 import { Badge } from '../common/Badge';
 import { ExtracurricularRegisterModal } from './ExtracurricularRegisterModal';
 import { ExtracurricularGradeModal } from './ExtracurricularGradeModal';
+import { ExtracurricularBatchGradeModal } from './ExtracurricularBatchGradeModal';
 import { ExtracurricularReportExportModal } from './ExtracurricularReportExportModal';
 import { FileSpreadsheet } from 'lucide-react';
 import { ConfirmDialog } from '../common/ConfirmDialog';
@@ -55,6 +57,7 @@ export const ExtracurricularDetailView: React.FC<ExtracurricularDetailViewProps>
   const [registerInitialMode, setRegisterInitialMode] = useState<'individual' | 'class'>('individual');
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [gradingMember, setGradingMember] = useState<ExtracurricularMember | null>(null);
+  const [isBatchGradeModalOpen, setIsBatchGradeModalOpen] = useState(false);
   const [deletingMemberId, setDeletingMemberId] = useState<string | null>(null);
 
   const members = extracurricularMembers.filter(
@@ -302,6 +305,16 @@ export const ExtracurricularDetailView: React.FC<ExtracurricularDetailViewProps>
             </div>
             {canManageExtracurriculars && (
               <div className="flex flex-wrap items-center gap-2">
+                {members.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setIsBatchGradeModalOpen(true)}
+                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-amber-950 font-black text-xs shadow-2xs active:scale-95 transition-all"
+                    title="Input Nilai & Narasi Rapor Otomatis Sekaligus untuk Seluruh Murid"
+                  >
+                    <Zap className="w-3.5 h-3.5 fill-amber-950" /> ⚡ Penilaian Otomatis Massal
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={() => {
@@ -493,6 +506,13 @@ export const ExtracurricularDetailView: React.FC<ExtracurricularDetailViewProps>
         onClose={() => setGradingMember(null)}
         member={gradingMember}
         extracurricular={extracurricular}
+      />
+
+      <ExtracurricularBatchGradeModal
+        isOpen={isBatchGradeModalOpen}
+        onClose={() => setIsBatchGradeModalOpen(false)}
+        extracurricular={extracurricular}
+        members={members}
       />
 
       <ExtracurricularReportExportModal

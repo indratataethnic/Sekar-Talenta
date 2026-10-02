@@ -123,7 +123,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch {
       // fallback
     }
-    return initialUsers[0]; // Default to Super Admin for seamless testing
+    return null; // Guest / Unauthenticated by default
   });
 
   // Sync users & active session to localStorage
