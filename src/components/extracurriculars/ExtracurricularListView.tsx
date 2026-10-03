@@ -68,7 +68,7 @@ export const ExtracurricularListView: React.FC = () => {
     );
   }
 
-  const categories = ['all', 'Keagamaan', 'Kepanduan', 'Teknologi', 'Seni Budaya', 'Olahraga'];
+  const categories = ['all', 'Akademik & Sains', 'Literasi & Bahasa', 'Keagamaan', 'Kepanduan', 'Teknologi', 'Seni Budaya', 'Olahraga'];
 
   const filteredEkskuls = extracurriculars.filter((ekskul) => {
     const matchCategory = selectedCategory === 'all' || ekskul.category === selectedCategory;

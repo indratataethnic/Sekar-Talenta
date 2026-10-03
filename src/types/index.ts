@@ -197,7 +197,7 @@ export interface Extracurricular {
   id: string;
   code: string;
   name: string;
-  category: 'Keagamaan' | 'Kepanduan' | 'Teknologi' | 'Seni Budaya' | 'Olahraga';
+  category: 'Keagamaan' | 'Kepanduan' | 'Teknologi' | 'Seni Budaya' | 'Olahraga' | 'Akademik & Sains' | 'Literasi & Bahasa';
   icon: string;
   badgeColor: string;
   description: string;

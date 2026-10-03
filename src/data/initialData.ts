@@ -791,6 +791,68 @@ export const initialExtracurriculars: Extracurricular[] = [
     location: 'Panggung Terbuka SDN Karanganyar',
     capacity: 500,
     isActive: true
+  },
+  {
+    id: 'ekskul_mipa',
+    code: 'mipa',
+    name: 'Olimpiade MIPA & Sains Eksperimen',
+    category: 'Akademik & Sains',
+    icon: 'BookOpen',
+    badgeColor: 'blue',
+    description: 'Pembinaan kemampuan nalar kritis, logika matematika, penalaran KMNR, dan eksperimen sains sederhana persiapan olimpiade.',
+    goals: [
+      'Menguasai pemecahan masalah Matematika Nalaria Realistik (KMNR).',
+      'Memahami konsep eksperimen sains fisika & biologi sederhana.',
+      'Menyiapkan tim olimpiade MIPA sekolah tingkat kecamatan & kota.'
+    ],
+    coachName: 'Ibu Maya Kusuma, S.Pd. & Bapak Eko Prasetyo, S.Pd.',
+    coaches: [
+      {
+        name: 'Ibu Maya Kusuma, S.Pd.',
+        role: 'Pembina Utama IPA',
+        type: 'internal',
+        phone: '081299887711'
+      },
+      {
+        name: 'Bapak Eko Prasetyo, S.Pd.',
+        role: 'Pembina Matematika',
+        type: 'internal',
+        phone: '081299887722'
+      }
+    ],
+    coachPhone: '081299887711',
+    dayTimeSchedule: 'Kamis, 14.00 - 15.30 WIB',
+    location: 'Laboratorium Sains & Ruang Kelas 6A',
+    capacity: 500,
+    isActive: true
+  },
+  {
+    id: 'ekskul_ips_kebangsaan',
+    code: 'ips',
+    name: 'Klub IPS & Wawasan Nusantara',
+    category: 'Akademik & Sains',
+    icon: 'Globe2',
+    badgeColor: 'indigo',
+    description: 'Pendalaman sejarah nusantara, geografi anak, IPS kualitatif, serta wawasan kebangsaan dan kebudayaan daerah.',
+    goals: [
+      'Menumbuhkan rasa cinta tanah air dan wawasan kebudayaan nusantara.',
+      'Memahami fenomena sosial lingkungan dan peta geografi anak.',
+      'Menyiapkan peserta lomba wawasan kebangsaan & cerdas cermat IPS.'
+    ],
+    coachName: 'Bapak Bambang Wijaya, S.Pd. & Ibu Tri Wahyuni, S.Pd.',
+    coaches: [
+      {
+        name: 'Bapak Bambang Wijaya, S.Pd.',
+        role: 'Pembina Utama IPS',
+        type: 'internal',
+        phone: '081377889900'
+      }
+    ],
+    coachPhone: '081377889900',
+    dayTimeSchedule: 'Selasa, 14.00 - 15.30 WIB',
+    location: 'Ruang Perpustakaan Sekolah',
+    capacity: 500,
+    isActive: true
   }
 ];
 

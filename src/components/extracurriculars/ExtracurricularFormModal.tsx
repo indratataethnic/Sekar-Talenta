@@ -44,7 +44,7 @@ export const ExtracurricularFormModal: React.FC<ExtracurricularFormModalProps> =
   const { addExtracurricular, updateExtracurricular, teachers } = useData();
 
   const [name, setName] = useState('');
-  const [category, setCategory] = useState<'Keagamaan' | 'Kepanduan' | 'Teknologi' | 'Seni Budaya' | 'Olahraga'>('Seni Budaya');
+  const [category, setCategory] = useState<'Keagamaan' | 'Kepanduan' | 'Teknologi' | 'Seni Budaya' | 'Olahraga' | 'Akademik & Sains' | 'Literasi & Bahasa'>('Akademik & Sains');
   const [description, setDescription] = useState('');
   const [dayTimeSchedule, setDayTimeSchedule] = useState('Jumat, 14.00 - 15.30 WIB');
   const [location, setLocation] = useState('Ruang Serbaguna');
@@ -241,12 +241,22 @@ export const ExtracurricularFormModal: React.FC<ExtracurricularFormModalProps> =
           goals: goalsList
         });
       } else {
+        let badgeColor = 'blue';
+        let icon = 'BookOpen';
+        if (category === 'Keagamaan') { badgeColor = 'teal'; icon = 'Sparkles'; }
+        else if (category === 'Kepanduan') { badgeColor = 'amber'; icon = 'Compass'; }
+        else if (category === 'Teknologi') { badgeColor = 'cyan'; icon = 'Laptop'; }
+        else if (category === 'Seni Budaya') { badgeColor = 'rose'; icon = 'Palette'; }
+        else if (category === 'Olahraga') { badgeColor = 'orange'; icon = 'Activity'; }
+        else if (category === 'Akademik & Sains') { badgeColor = 'blue'; icon = 'BookOpen'; }
+        else if (category === 'Literasi & Bahasa') { badgeColor = 'purple'; icon = 'PenTool'; }
+
         await addExtracurricular({
           code,
           name: name.trim(),
           category,
-          icon: 'Layers',
-          badgeColor: 'blue',
+          icon,
+          badgeColor,
           description: description.trim(),
           coachName: primaryCoachName,
           coaches: validCoaches,
@@ -311,6 +321,8 @@ export const ExtracurricularFormModal: React.FC<ExtracurricularFormModalProps> =
                 onChange={(e) => setCategory(e.target.value as any)}
                 className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 focus:outline-emerald-600 bg-white font-medium"
               >
+                <option value="Akademik & Sains">Akademik & Sains (MIPA / IPS)</option>
+                <option value="Literasi & Bahasa">Literasi & Bahasa</option>
                 <option value="Keagamaan">Keagamaan</option>
                 <option value="Kepanduan">Kepanduan</option>
                 <option value="Teknologi">Teknologi</option>
